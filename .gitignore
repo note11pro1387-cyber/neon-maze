@@ -1,0 +1,54 @@
+# Android / Gradle generated state
+.gradle/
+**/build/
+local.properties
+
+# IDE metadata
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Android native build / profiler output
+.externalNativeBuild/
+.cxx/
+captures/
+*.hprof
+*.trace
+
+# Build products and diagnostics
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.log
+*.tmp
+*.part
+
+# Local signing material and credentials — never commit these
+key.properties
+secrets.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.mobileprovision
+.env
+.env.*
+!.env.example
+
+# Generated content-pack output (source tooling remains tracked)
+/tools/content-pack/output/
+
+# Keep the official Gradle Wrapper JAR trackable; do not add a *.jar ignore rule.
+
+# Python tooling generated state
+__pycache__/
+*.py[cod]

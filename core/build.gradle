@@ -1,0 +1,60 @@
+// -----------------------------------------------------------------------------
+// NEON MAZE — :core module build script
+// -----------------------------------------------------------------------------
+// Pure Java library. No Android plugin, no AndroidX, no Android SDK types.
+// The module compiles and tests on the standard JVM only.
+//
+// Toolchain lock: Java 17. Do not lower without a Change Request.
+// -----------------------------------------------------------------------------
+
+plugins {
+    // The java-library plugin exposes `api` and `implementation` configurations
+    // and produces a standard JAR. It is the correct plugin for a module that
+    // other modules depend on but that is not itself an Android application.
+    id 'java-library'
+}
+
+// -----------------------------------------------------------------------------
+// Java toolchain
+// -----------------------------------------------------------------------------
+// Pin the JDK to 17 for both compilation and test execution. This prevents the
+// build from silently using a different JDK on a developer machine and keeps
+// bytecode compatible with the app module.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// Enforce the Java 17 API floor for all compiled sources. `options.release`
+// is preferred over `sourceCompatibility`/`targetCompatibility` because it
+// checks against the public API of the specified release, catching accidental
+// use of newer JDK methods that would fail on older runtimes.
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+}
+
+// -----------------------------------------------------------------------------
+// Dependencies
+// -----------------------------------------------------------------------------
+// The only dependency in :core is JUnit 4.13.2, scoped to tests. No AndroidX,
+// no Kotlin, no third-party runtime library. This is what makes :core
+// independently testable and keeps the pure-Java boundary enforceable.
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// -----------------------------------------------------------------------------
+// Test task
+// -----------------------------------------------------------------------------
+// JUnit 4 is the only test framework in this project. The test task uses the
+// toolchain JDK and fails the build on any test failure. No test filtering,
+// no `ignoreFailures`, no weakened assertions.
+test {
+    useJUnit()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+}

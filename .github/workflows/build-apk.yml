@@ -1,0 +1,102 @@
+name: Build APK
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neon-maze-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug-apk:
+    name: Core tests, Android lint, Debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4.0.4
+        with:
+          packages: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
+
+      - name: Prepare POSIX Wrapper launchers
+        shell: bash
+        run: chmod 0755 gradlew tools/ci/bootstrap-gradle-wrapper.sh
+
+      - name: Bootstrap and verify official Gradle Wrapper JAR
+        shell: bash
+        run: bash tools/ci/bootstrap-gradle-wrapper.sh
+
+      - name: Verify pinned JDK, Wrapper JAR and Gradle runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          printf '%s  %s\n' \
+            '497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7' \
+            'gradle/wrapper/gradle-wrapper.jar' | sha256sum --check --strict
+          ./gradlew --no-daemon --version
+
+      - name: Run Core tests, Android lint and assemble Debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew \
+            --no-daemon \
+            --stacktrace \
+            --warning-mode all \
+            :core:test \
+            :app:lintDebug \
+            :app:assembleDebug
+
+      - name: Verify APK and write SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK='app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          sha256sum "$APK" > "$APK.sha256"
+          ls -lh "$APK" "$APK.sha256"
+
+      - name: Upload installable Debug APK
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: neon-maze-debug-apk-${{ github.run_number }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload test and lint diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: neon-maze-build-diagnostics-${{ github.run_number }}
+          path: |
+            core/build/reports/tests/test/
+            core/build/test-results/test/
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: warn
+          retention-days: 7

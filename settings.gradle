@@ -1,0 +1,38 @@
+// -----------------------------------------------------------------------------
+// NEON MAZE — Gradle settings
+// -----------------------------------------------------------------------------
+// Two-module Android Native project:
+//   :app   — UI, lifecycle, Canvas rendering, input adapter, SQLite persistence
+//   :core  — pure Java game logic, geometry, collision, replay, scoring
+//
+// Toolchain lock:
+//   AGP 9.4.0, Gradle 9.6.0, JDK 17, compileSdk/targetSdk 36, minSdk 24.
+// -----------------------------------------------------------------------------
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    // Repositories are declared here only. Subprojects must not declare their
+    // own repositories; this keeps dependency provenance auditable and
+    // reproducible on the reference toolchain.
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Explicit, stable project identity. Do not derive from the checkout folder.
+rootProject.name = "NEON MAZE"
+
+// Exactly two modules keep the dependency graph explicit. Additional focused
+// modules may be introduced when they improve ownership or build isolation.
+include ':app'
+include ':core'

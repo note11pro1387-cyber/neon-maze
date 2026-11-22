@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">NEON MAZE — Interface Icon System v0.1</title>
+  <desc id="desc">A cohesive set of eighteen original outlined interface icons for an Android precision maze game, presented on layered floating dark surfaces.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111F"/>
+      <stop offset="0.55" stop-color="#0A1527"/>
+      <stop offset="1" stop-color="#10112B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#5BE2E8"/>
+      <stop offset="0.55" stop-color="#70BDF7"/>
+      <stop offset="1" stop-color="#B38BFF"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#17283C"/>
+      <stop offset="1" stop-color="#101A2C"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6CE8EA" stop-opacity=".48"/>
+      <stop offset=".52" stop-color="#668ABF" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#B38BFF" stop-opacity=".42"/>
+    </linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="190%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur"/>
+      <feOffset dy="8" result="offset"/>
+      <feColorMatrix in="offset" type="matrix" values="0 0 0 0 0.01  0 0 0 0 0.03  0 0 0 0 0.08  0 0 0 .7 0" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#8BA8D0" stroke-opacity=".045" stroke-width="1"/>
+    </pattern>
+    <style>
+      .icon { fill:none; stroke:url(#accent); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+      .muted { fill:none; stroke:#91A8C4; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+      .label { fill:#CBD8E8; font-family:Inter,Arial,sans-serif; font-size:15px; letter-spacing:1.5px; }
+      .sub { fill:#7F94AF; font-family:Inter,Arial,sans-serif; font-size:11px; letter-spacing:2.4px; }
+    </style>
+    <symbol id="i-play" viewBox="0 0 24 24"><path class="icon" d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 6.1c.7.5.7 1.5 0 2l-9.1 6.1c-.7.5-1.6 0-1.6-.9z"/></symbol>
+    <symbol id="i-levels" viewBox="0 0 24 24"><path class="icon" d="M4.5 6.5 12 3.8l7.5 2.7v11L12 20.2l-7.5-2.7z"/><path class="muted" d="m4.8 6.7 7.2 2.6 7.2-2.6M12 9.4v10.3M8 8.1l7.6-2.8"/><circle class="icon" cx="12" cy="13.5" r="1.2"/></symbol>
+    <symbol id="i-profile" viewBox="0 0 24 24"><circle class="icon" cx="12" cy="8" r="3.4"/><path class="icon" d="M4.8 20c.7-3.5 3.2-5.5 7.2-5.5s6.5 2 7.2 5.5"/><path class="muted" d="M7 20h10"/></symbol>
+    <symbol id="i-tutorial" viewBox="0 0 24 24"><path class="icon" d="M5 5.5c2.7-.8 5.1-.3 7 1.2 1.9-1.5 4.3-2 7-1.2v13c-2.7-.8-5.1-.3-7 1.2-1.9-1.5-4.3-2-7-1.2z"/><path class="muted" d="M12 6.7v13M8 9h2M14 9h2M8 12h2M14 12h2"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path class="icon" d="m10 3.8.5-1h3l.5 1 1 1.8 1.8.3 1.1-.5 2.1 2.1-.5 1.1.3 1.8 1.8 1 .9.5v3l-.9.5-1.8 1-.3 1.8.5 1.1-2.1 2.1-1.1-.5-1.8.3-1 1.8-.5.9h-3l-.5-.9-1-1.8-1.8-.3-1.1.5L4 18.2l.5-1.1-.3-1.8-1.8-1-.9-.5v-3l.9-.5 1.8-1 .3-1.8L4 6.4l2.1-2.1 1.1.5 1.8-.3z" transform="translate(-.6 -1.2) scale(1.05)"/><circle class="muted" cx="12" cy="12" r="3.2"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path class="icon" d="M8.2 5.5v13M15.8 5.5v13"/></symbol>
+    <symbol id="i-restart" viewBox="0 0 24 24"><path class="icon" d="M5.3 9.1A7.2 7.2 0 1 1 5 14"/><path class="icon" d="M5.3 4.8v4.8h4.8"/><path class="muted" d="M12 7.8v4.5l3 1.7"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path class="icon" d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path class="icon" d="m3.8 10.5 8.2-6.8 8.2 6.8v9H14v-5.7h-4v5.7H3.8z"/><path class="muted" d="M8.4 19.5v-5.7h7.2v5.7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle class="icon" cx="12" cy="12" r="8.6"/><path class="icon" d="M12 6.6v5.8l4 2.1"/><path class="muted" d="M8 2.8h8"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path class="icon" d="m12 3.1 2.7 5.7 6.2.8-4.5 4.3 1.1 6.2-5.5-3-5.5 3 1.1-6.2-4.5-4.3 6.2-.8z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect class="icon" x="5.2" y="10.2" width="13.6" height="10.2" rx="2"/><path class="icon" d="M8 10.2V7.5a4 4 0 0 1 8 0v2.7"/><circle class="muted" cx="12" cy="15.2" r="1.1"/><path class="muted" d="M12 16.3v1.4"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path class="icon" d="M4 9.5h3.4l4.5-3.8v13l-4.5-3.8H4z"/><path class="icon" d="M15 9a4.5 4.5 0 0 1 0 6M17.5 6.5a8 8 0 0 1 0 11"/></symbol>
+    <symbol id="i-haptics" viewBox="0 0 24 24"><rect class="icon" x="8" y="4.2" width="8" height="15.6" rx="2"/><path class="muted" d="M4.8 8.2c-1.5 2.2-1.5 5.4 0 7.6M19.2 8.2c1.5 2.2 1.5 5.4 0 7.6M2.5 5.7c-2.1 3.6-2.1 8.8 0 12.4M21.5 5.7c2.1 3.6 2.1 8.8 0 12.4"/></symbol>
+    <symbol id="i-avatar" viewBox="0 0 24 24"><circle class="icon" cx="12" cy="8" r="3.1"/><path class="icon" d="M5 20c.7-3.2 3.1-5.1 7-5.1s6.3 1.9 7 5.1"/><path class="muted" d="M4.2 4.3h2M17.8 4.3h2M4.2 19.8h2M17.8 19.8h2"/></symbol>
+    <symbol id="i-success" viewBox="0 0 24 24"><circle class="icon" cx="12" cy="12" r="8.8"/><path class="icon" d="m7.8 12.2 2.8 2.8 5.8-6"/><path class="muted" d="M8.2 3.9 9 2.8M15.8 3.9 15 2.8"/></symbol>
+    <symbol id="i-failure" viewBox="0 0 24 24"><circle class="icon" cx="12" cy="12" r="8.8"/><path class="icon" d="m9 9 6 6m0-6-6 6"/><path class="muted" d="M12 2.8v1.5"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path class="icon" d="M7 4h10v5.2a5 5 0 0 1-10 0zM12 14.2V19M8.5 20h7"/><path class="muted" d="M7 6H4.2v2.2A3.2 3.2 0 0 0 7.5 11M17 6h2.8v2.2a3.2 3.2 0 0 1-3.3 2.8"/></symbol>
+  </defs>
+
+  <rect width="1200" height="760" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="760" rx="28" fill="url(#grid)"/>
+  <circle cx="1040" cy="90" r="230" fill="#6C8EFF" opacity=".045"/>
+  <circle cx="90" cy="690" r="250" fill="#44D8DB" opacity=".035"/>
+  <text x="58" y="63" fill="#EEF5FF" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="650" letter-spacing="3">NEON MAZE</text>
+  <text x="59" y="91" class="sub">INTERFACE ICON SYSTEM / 01</text>
+  <path d="M58 112H1140" stroke="#91A8C4" stroke-opacity=".16"/>
+
+  <g filter="url(#shadow)">
+    <!-- row 1 -->
+    <g transform="translate(58 145)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-play" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">PLAY</text><text x="79" y="130" class="sub" text-anchor="middle">PRIMARY</text></g>
+    <g transform="translate(244 145)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-levels" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">LEVELS</text><text x="79" y="130" class="sub" text-anchor="middle">PROGRESSION</text></g>
+    <g transform="translate(430 145)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-profile" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">PROFILE</text><text x="79" y="130" class="sub" text-anchor="middle">PLAYER ID</text></g>
+    <g transform="translate(616 145)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-tutorial" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">HOW TO PLAY</text><text x="79" y="130" class="sub" text-anchor="middle">GUIDE</text></g>
+    <g transform="translate(802 145)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-settings" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">SETTINGS</text><text x="79" y="130" class="sub" text-anchor="middle">PREFERENCES</text></g>
+    <g transform="translate(988 145)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-pause" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">PAUSE</text><text x="79" y="130" class="sub" text-anchor="middle">GAME STATE</text></g>
+    <!-- row 2 -->
+    <g transform="translate(58 323)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-restart" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">RESTART</text><text x="79" y="130" class="sub" text-anchor="middle">RETRY</text></g>
+    <g transform="translate(244 323)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-back" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">BACK</text><text x="79" y="130" class="sub" text-anchor="middle">NAVIGATION</text></g>
+    <g transform="translate(430 323)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-home" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">HOME</text><text x="79" y="130" class="sub" text-anchor="middle">NAVIGATION</text></g>
+    <g transform="translate(616 323)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-clock" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">TIME</text><text x="79" y="130" class="sub" text-anchor="middle">RECORD</text></g>
+    <g transform="translate(802 323)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-star" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">STARS</text><text x="79" y="130" class="sub" text-anchor="middle">ACHIEVEMENT</text></g>
+    <g transform="translate(988 323)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-lock" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">LOCKED</text><text x="79" y="130" class="sub" text-anchor="middle">LEVEL STATE</text></g>
+    <!-- row 3 -->
+    <g transform="translate(58 501)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-sound" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">SOUND</text><text x="79" y="130" class="sub" text-anchor="middle">AUDIO</text></g>
+    <g transform="translate(244 501)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-haptics" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">HAPTICS</text><text x="79" y="130" class="sub" text-anchor="middle">TOUCH FEEDBACK</text></g>
+    <g transform="translate(430 501)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-avatar" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">AVATAR</text><text x="79" y="130" class="sub" text-anchor="middle">PLAYER IMAGE</text></g>
+    <g transform="translate(616 501)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-success" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">SUCCESS</text><text x="79" y="130" class="sub" text-anchor="middle">COMPLETION</text></g>
+    <g transform="translate(802 501)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-failure" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">FAILURE</text><text x="79" y="130" class="sub" text-anchor="middle">COLLISION</text></g>
+    <g transform="translate(988 501)"><rect width="158" height="148" rx="20" fill="#030A16" opacity=".6"/><rect x="0.5" y="0.5" width="157" height="147" rx="19.5" fill="url(#card)" stroke="url(#edge)"/><path d="M18 1.2H140" stroke="#D3F8FF" stroke-opacity=".14"/><use xlink:href="#i-trophy" x="59" y="31" width="40" height="40"/><text x="79" y="112" class="label" text-anchor="middle">RECORD</text><text x="79" y="130" class="sub" text-anchor="middle">BEST RUN</text></g>
+  </g>
+  <text x="60" y="709" class="sub">VECTOR MASTER · 18 ICONS · CONSISTENT 24PX GRID · OUTLINED GEOMETRY</text>
+  <text x="1140" y="709" fill="#70849F" font-family="Inter,Arial,sans-serif" font-size="11" text-anchor="end">DESIGN DIRECTION / DRAFT 01</text>
+</svg>

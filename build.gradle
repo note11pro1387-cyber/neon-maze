@@ -1,0 +1,20 @@
+// -----------------------------------------------------------------------------
+// NEON MAZE — Root build script
+// -----------------------------------------------------------------------------
+// This file only declares the Android Gradle Plugin versions for the whole
+// build. Plugins are declared with `apply false` so they are resolved once and
+// can be applied by the subprojects (:app, :core) without repeating versions.
+//
+// Java-only project: the Kotlin Android plugin is intentionally absent.
+// Toolchain lock: AGP 9.4.0, Gradle 9.6.0, JDK 17.
+// -----------------------------------------------------------------------------
+
+plugins {
+    id 'com.android.application' version '9.4.0' apply false
+}
+
+// No `allprojects`, `subprojects`, or `buildscript` blocks: repository
+// declarations live exclusively in settings.gradle, and per-module build
+// files declare their own dependencies. Keeping the root file this small
+// makes the build graph auditable and prevents accidental configuration
+// leakage into :core.
