@@ -19,7 +19,7 @@ plugins {
 }
 
 // -----------------------------------------------------------------------------
-// 1. Vazirmatn font asset generation task
+// 1. Typed task for Vazirmatn asset generation
 // -----------------------------------------------------------------------------
 
 abstract class PrepareVazirmatnAssetsTask extends DefaultTask {
