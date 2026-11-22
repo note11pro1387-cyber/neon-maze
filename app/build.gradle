@@ -1,4 +1,7 @@
 import javax.net.ssl.HttpsURLConnection
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.tasks.OutputDirectory
 
 // -----------------------------------------------------------------------------
 // NEON MAZE — :app module build script
@@ -15,6 +18,14 @@ plugins {
     // Android application plugin. The version is published by the root
     // build.gradle and must not be repeated here.
     id 'com.android.application'
+}
+
+// AGP 9.x rejects Provider values passed through the legacy Android SourceSet DSL.
+// Expose the generated assets directory as a typed task output and register it
+// through androidComponents / Variant.sources instead.
+abstract class PrepareVazirmatnAssetsTask extends DefaultTask {
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDirectory()
 }
 
 // The content endpoint is public data, never an API token or private credential.
@@ -87,14 +98,14 @@ def copyBounded = { InputStream input, File output, long maximum ->
     }
 }
 
-tasks.register('prepareVazirmatnAssets') {
+def prepareVazirmatnAssets = tasks.register('prepareVazirmatnAssets', PrepareVazirmatnAssetsTask) {
+    outputDirectory.set(generatedFontAssets)
     inputs.property('vazirmatnRevision', vazirmatnRevision)
     inputs.property('vazirmatnArchiveSha256', vazirmatnArchiveSha256)
     inputs.property('localFontDirectory', configuredLocalFontDirectory)
     if (!configuredLocalFontDirectory.isEmpty()) {
         inputs.files(vazirmatnFonts.collect { new File(configuredLocalFontDirectory, it) })
     }
-    outputs.files(vazirmatnFonts.collect { generatedFontAssets.get().file("fonts/${it}").asFile })
     outputs.upToDateWhen {
         vazirmatnFonts.every { name -> isValidTrueType(generatedFontAssets.get().file("fonts/${name}").asFile) }
     }
@@ -271,12 +282,6 @@ android {
         buildConfig true
     }
 
-    sourceSets {
-        main {
-            assets.srcDir(generatedFontAssets)
-        }
-    }
-
     // No lint baseline is checked in. Lint errors fail the build; warnings
     // remain visible for engineering review without hiding diagnostics.
     lint {
@@ -285,8 +290,16 @@ android {
     }
 }
 
-tasks.named('preBuild').configure {
-    dependsOn(tasks.named('prepareVazirmatnAssets'))
+// Register the generated font directory as a generated asset source for each
+// Android variant. AGP automatically carries the task dependency into the
+// variant asset pipeline; the DirectoryProperty is the task's declared output.
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets.addGeneratedSourceDirectory(
+                prepareVazirmatnAssets,
+                { task -> task.outputDirectory }
+        )
+    }
 }
 
 // -----------------------------------------------------------------------------
