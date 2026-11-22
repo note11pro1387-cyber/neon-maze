@@ -1,141 +1,115 @@
 import javax.net.ssl.HttpsURLConnection
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 
 // -----------------------------------------------------------------------------
 // NEON MAZE — :app module build script
 // -----------------------------------------------------------------------------
-// Android application module. Hosts UI, lifecycle, Canvas rendering, input
-// adapter, and SQLite persistence. Game logic lives in :core and is consumed
-// as a plain Java dependency.
-//
 // Toolchain lock: AGP 9.4.0, Gradle 9.6.0, JDK 17.
 // Compile/target SDK: 36. Minimum SDK: 24.
 // -----------------------------------------------------------------------------
 
 plugins {
-    // Android application plugin. The version is published by the root
-    // build.gradle and must not be repeated here.
     id 'com.android.application'
 }
 
-// AGP's Variant API requires generated directories to be exposed as a typed
-// task output. The task is registered once per variant below.
+// -----------------------------------------------------------------------------
+// 1. Vazirmatn font asset generation task
+// -----------------------------------------------------------------------------
+
 abstract class PrepareVazirmatnAssetsTask extends DefaultTask {
+
+    @Input
+    abstract Property<String> getVazirmatnRevision()
+
+    @Input
+    abstract Property<String> getVazirmatnArchiveSha256()
+
+    @Input
+    @Optional
+    abstract Property<String> getLocalFontDirectory()
+
     @OutputDirectory
     abstract DirectoryProperty getOutputDirectory()
-}
 
-// The content endpoint is public data, never an API token or private credential.
-// Empty by default: the APK is fully playable offline unless an optional pack
-// endpoint is explicitly configured by the developer/build environment.
-def configuredContentManifestUrl = (findProperty('neonMazeContentManifestUrl')
-        ?: System.getenv('NEON_MAZE_CONTENT_MANIFEST_URL') ?: '').toString().trim()
-if (!configuredContentManifestUrl.isEmpty()) {
-    try {
-        if (configuredContentManifestUrl.length() > 2048
-                || configuredContentManifestUrl.chars().anyMatch { Character.isISOControl(it) || Character.isWhitespace(it) }) {
-            throw new IllegalArgumentException('manifest URL contains invalid characters')
-        }
-        URL contentUrl = new URL(configuredContentManifestUrl)
-        if (!'https'.equalsIgnoreCase(contentUrl.protocol)
-                || contentUrl.host == null || contentUrl.host.isEmpty()
-                || contentUrl.userInfo != null || contentUrl.ref != null) {
-            throw new IllegalArgumentException('manifest URL must be HTTPS without user information or fragments')
-        }
-    } catch (Exception invalidUrl) {
-        throw new GradleException('Invalid NEON MAZE content manifest URL', invalidUrl)
-    }
-}
-def escapedContentManifestUrl = configuredContentManifestUrl
-        .replace('\\', '\\\\').replace('"', '\\"')
+    private static final String ARCHIVE_URL =
+            'https://github.com/rastikerdar/vazirmatn/releases/download/v33.003/vazirmatn-v33.003.zip'
 
-// Official Vazirmatn v33.003 release archive. Build verifies the release ZIP
-// SHA-256 before extracting only the two static weights required by the UI.
-// The binary font files are generated under build/ and are never checked in.
-def vazirmatnRevision = 'v33.003'
-def vazirmatnArchiveUrl = 'https://github.com/rastikerdar/vazirmatn/releases/download/v33.003/vazirmatn-v33.003.zip'
-def vazirmatnArchiveSha256 = '0a9afd41967e6f57096a56a181a23f81a2b999b62f1f2a4e4b26736580854fdb'
-def vazirmatnFonts = ['Vazirmatn-Regular.ttf', 'Vazirmatn-Bold.ttf']
-def configuredLocalFontDirectory = (findProperty('neonMazeVazirmatnDir')
-        ?: System.getenv('NEON_MAZE_VAZIRMATN_DIR') ?: '').toString().trim()
-def isValidTrueType = { File file ->
-    if (!file.isFile() || file.length() < 40_000L || file.length() > 8L * 1024L * 1024L) return false
-    file.withInputStream { input ->
-        byte[] header = new byte[4]
-        int offset = 0
-        while (offset < 4) {
-            int read = input.read(header, offset, 4 - offset)
-            if (read < 0) return false
-            offset += read
-        }
-        return (header[0] == 0 && header[1] == 1 && header[2] == 0 && header[3] == 0)
-                || (header[0] == 79 && header[1] == 84 && header[2] == 84 && header[3] == 79)
-    }
-}
-def sha256File = { File file ->
-    def digest = java.security.MessageDigest.getInstance('SHA-256')
-    file.withInputStream { input ->
-        byte[] buffer = new byte[32768]
-        int read
-        while ((read = input.read(buffer)) != -1) digest.update(buffer, 0, read)
-    }
-    digest.digest().collect { String.format('%02x', it & 0xff) }.join()
-}
-def copyBounded = { InputStream input, File output, long maximum ->
-    output.withOutputStream { stream ->
-        byte[] buffer = new byte[16384]
-        long total = 0L
-        int read
-        while ((read = input.read(buffer)) != -1) {
-            total += read
-            if (total > maximum) throw new GradleException('Vazirmatn font/archive exceeds its size limit')
-            stream.write(buffer, 0, read)
-        }
-    }
-}
+    private static final List<String> FONT_NAMES = ['Vazirmatn-Regular.ttf', 'Vazirmatn-Bold.ttf']
 
-// Keep the asset-generation implementation independent of AGP's variant model.
-// Each variant task supplies its own output directory to this action.
-def prepareVazirmatnAssets = { String variantName, File generatedAssetsDirectory ->
-        File outputDirectory = new File(generatedAssetsDirectory, 'fonts')
-        if (!outputDirectory.isDirectory() && !outputDirectory.mkdirs()) {
+    @TaskAction
+    void generate() {
+        File outputDir = outputDirectory.get().asFile
+        File fontsDir = new File(outputDir, 'fonts')
+        if (!fontsDir.isDirectory() && !fontsDir.mkdirs()) {
             throw new GradleException('Unable to create generated Vazirmatn asset directory')
         }
-        if (!configuredLocalFontDirectory.isEmpty()) {
-            vazirmatnFonts.each { name ->
-                File localFile = new File(configuredLocalFontDirectory, name)
-                if (!isValidTrueType(localFile)) {
-                    throw new GradleException("Invalid local font: ${localFile}")
-                }
-                File destination = new File(outputDirectory, name)
-                if (!destination.isFile() || sha256File(destination) != sha256File(localFile)) {
-                    File temporary = new File(outputDirectory, name + '.tmp')
-                    if (temporary.exists()) temporary.delete()
-                    localFile.withInputStream { input -> copyBounded(input, temporary, 8L * 1024L * 1024L) }
-                    if (!isValidTrueType(temporary)) throw new GradleException("Invalid local font: ${name}")
-                    if (destination.exists() && !destination.delete()) throw new GradleException("Cannot replace ${name}")
-                    if (!temporary.renameTo(destination)) throw new GradleException("Cannot install ${name}")
-                }
-            }
+
+        String localDir = localFontDirectory.getOrElse('').trim()
+        String revision = vazirmatnRevision.get()
+        String expectedSha256 = vazirmatnArchiveSha256.get()
+
+        if (!localDir.isEmpty()) {
+            copyFromLocalDirectory(localDir, fontsDir)
             return
         }
 
-        File downloadCacheDirectory = layout.buildDirectory.dir("downloads/vazirmatn/${variantName}").get().asFile
-        File downloadedArchive = new File(downloadCacheDirectory,
-                "vazirmatn-${vazirmatnRevision}.zip")
-        if (downloadedArchive.exists() && sha256File(downloadedArchive) != vazirmatnArchiveSha256) {
-            if (!downloadedArchive.delete()) throw new GradleException('Cannot remove invalid cached Vazirmatn archive')
-        }
-        if (!downloadedArchive.isFile()) {
-            if (!downloadedArchive.parentFile.isDirectory() && !downloadedArchive.parentFile.mkdirs()) {
-                throw new GradleException('Unable to create font download cache')
+        downloadAndExtract(revision, expectedSha256, fontsDir)
+    }
+
+    private void copyFromLocalDirectory(String localDir, File fontsDir) {
+        FONT_NAMES.each { String name ->
+            File localFile = new File(localDir, name)
+            if (!isValidTrueType(localFile)) {
+                throw new GradleException("Invalid local font: ${localFile}")
             }
-            File temporaryArchive = new File(downloadedArchive.parentFile, downloadedArchive.name + '.tmp')
+            File destination = new File(fontsDir, name)
+            if (!destination.isFile() || sha256File(destination) != sha256File(localFile)) {
+                File temporary = new File(fontsDir, name + '.tmp')
+                if (temporary.exists()) temporary.delete()
+                localFile.withInputStream { InputStream input ->
+                    copyBounded(input, temporary, 8L * 1024L * 1024L)
+                }
+                if (!isValidTrueType(temporary)) {
+                    temporary.delete()
+                    throw new GradleException("Invalid local font after copy: ${name}")
+                }
+                if (destination.exists() && !destination.delete()) {
+                    throw new GradleException("Cannot replace existing font: ${name}")
+                }
+                if (!temporary.renameTo(destination)) {
+                    throw new GradleException("Cannot install font: ${name}")
+                }
+            }
+        }
+    }
+
+    private void downloadAndExtract(String revision, String expectedSha256, File fontsDir) {
+        File cacheDir = new File(project.layout.buildDirectory.get().asFile,
+                "downloads/vazirmatn/${revision}")
+        File downloadedArchive = new File(cacheDir, "vazirmatn-${revision}.zip")
+
+        if (downloadedArchive.exists() && sha256File(downloadedArchive) != expectedSha256) {
+            if (!downloadedArchive.delete()) {
+                throw new GradleException('Cannot remove invalid cached Vazirmatn archive')
+            }
+        }
+
+        if (!downloadedArchive.isFile()) {
+            if (!cacheDir.isDirectory() && !cacheDir.mkdirs()) {
+                throw new GradleException('Unable to create font download cache directory')
+            }
+            File temporaryArchive = new File(cacheDir, downloadedArchive.name + '.tmp')
             if (temporaryArchive.exists()) temporaryArchive.delete()
-            URL fontUrl = new URL(vazirmatnArchiveUrl)
+
+            URL fontUrl = new URL(ARCHIVE_URL)
             boolean downloaded = false
+
             for (int redirect = 0; redirect <= 5; redirect++) {
                 URLConnection connection = fontUrl.openConnection()
                 if (!(connection instanceof HttpsURLConnection)) {
@@ -146,40 +120,45 @@ def prepareVazirmatnAssets = { String variantName, File generatedAssetsDirectory
                 https.readTimeout = 45000
                 https.useCaches = false
                 https.instanceFollowRedirects = false
+
                 try {
-                    int response = https.responseCode
-                    if (response == 200) {
+                    int responseCode = https.responseCode
+                    if (responseCode == 200) {
                         if (https.contentLengthLong > 16L * 1024L * 1024L) {
                             throw new GradleException('Official Vazirmatn release archive exceeds size limit')
                         }
-                        https.inputStream.withCloseable { input ->
+                        https.inputStream.withCloseable { InputStream input ->
                             copyBounded(input, temporaryArchive, 16L * 1024L * 1024L)
                         }
                         downloaded = true
                         break
                     }
-                    if ([301, 302, 303, 307, 308].contains(response)) {
+                    if ([301, 302, 303, 307, 308].contains(responseCode)) {
                         String location = https.getHeaderField('Location')
-                        if (location == null || location.trim().isEmpty() || redirect == 5
-                                || location.chars().anyMatch { Character.isISOControl(it) || Character.isWhitespace(it) }) {
+                        if (location == null || location.trim().isEmpty() || redirect == 5) {
                             throw new GradleException('Invalid or excessive Vazirmatn download redirect')
                         }
                         URL nextUrl = new URL(fontUrl, location.trim())
                         if (!'https'.equalsIgnoreCase(nextUrl.protocol)
                                 || nextUrl.host == null || nextUrl.host.isEmpty()
                                 || nextUrl.userInfo != null || nextUrl.ref != null) {
-                            throw new GradleException('Vazirmatn redirects must remain HTTPS without credentials or fragments')
+                            throw new GradleException(
+                                    'Vazirmatn redirects must remain HTTPS without credentials or fragments')
                         }
                         fontUrl = nextUrl
                     } else {
-                        throw new GradleException('Unable to download the pinned official Vazirmatn release (HTTP ' + response + ')')
+                        throw new GradleException(
+                                "Unable to download pinned Vazirmatn release (HTTP ${responseCode})")
                     }
                 } finally {
                     https.disconnect()
                 }
             }
-            if (!downloaded) throw new GradleException('Vazirmatn download did not complete')
-            if (sha256File(temporaryArchive) != vazirmatnArchiveSha256) {
+
+            if (!downloaded) {
+                throw new GradleException('Vazirmatn download did not complete')
+            }
+            if (sha256File(temporaryArchive) != expectedSha256) {
                 temporaryArchive.delete()
                 throw new GradleException('Vazirmatn release archive SHA-256 verification failed')
             }
@@ -188,43 +167,129 @@ def prepareVazirmatnAssets = { String variantName, File generatedAssetsDirectory
                 throw new GradleException('Unable to cache verified Vazirmatn release archive')
             }
         }
-        if (sha256File(downloadedArchive) != vazirmatnArchiveSha256) {
+
+        if (sha256File(downloadedArchive) != expectedSha256) {
             throw new GradleException('Cached Vazirmatn release archive SHA-256 verification failed')
         }
 
         java.util.zip.ZipFile archive = new java.util.zip.ZipFile(downloadedArchive)
         try {
-            vazirmatnFonts.each { name ->
+            FONT_NAMES.each { String name ->
                 String suffix = "fonts/ttf/${name}"
                 def matches = Collections.list(archive.entries()).findAll { entry ->
                     !entry.isDirectory() && entry.name.endsWith(suffix)
                 }
-                if (matches.size() != 1) throw new GradleException("Expected one ${suffix} in official archive")
-                File destination = new File(outputDirectory, name)
-                File temporary = new File(outputDirectory, name + '.tmp')
+                if (matches.size() != 1) {
+                    throw new GradleException("Expected exactly one ${suffix} in official archive")
+                }
+                File destination = new File(fontsDir, name)
+                File temporary = new File(fontsDir, name + '.tmp')
                 if (temporary.exists()) temporary.delete()
-                archive.getInputStream(matches[0]).withCloseable { input ->
+
+                archive.getInputStream(matches[0]).withCloseable { InputStream input ->
                     copyBounded(input, temporary, 8L * 1024L * 1024L)
                 }
                 if (!isValidTrueType(temporary)) {
                     temporary.delete()
                     throw new GradleException("Official archive contains an invalid font: ${name}")
                 }
-                if (destination.exists() && !destination.delete()) throw new GradleException("Cannot replace ${name}")
-                if (!temporary.renameTo(destination)) throw new GradleException("Cannot activate ${name}")
-                logger.lifecycle("Prepared ${name} from verified Vazirmatn ${vazirmatnRevision}")
+                if (destination.exists() && !destination.delete()) {
+                    throw new GradleException("Cannot replace existing font: ${name}")
+                }
+                if (!temporary.renameTo(destination)) {
+                    throw new GradleException("Cannot activate font: ${name}")
+                }
+                logger.lifecycle("Prepared ${name} from verified Vazirmatn ${revision}")
             }
         } finally {
             archive.close()
         }
+    }
+
+    private static boolean isValidTrueType(File file) {
+        if (!file.isFile() || file.length() < 40_000L || file.length() > 8L * 1024L * 1024L) {
+            return false
+        }
+        file.withInputStream { InputStream input ->
+            byte[] header = new byte[4]
+            int offset = 0
+            while (offset < 4) {
+                int read = input.read(header, offset, 4 - offset)
+                if (read < 0) return false
+                offset += read
+            }
+            return (header[0] == 0 && header[1] == 1 && header[2] == 0 && header[3] == 0)
+                    || (header[0] == 79 && header[1] == 84 && header[2] == 84 && header[3] == 79)
+        }
+    }
+
+    private static String sha256File(File file) {
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        file.withInputStream { InputStream input ->
+            byte[] buffer = new byte[32768]
+            int read
+            while ((read = input.read(buffer)) != -1) {
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().collect { String.format('%02x', it & 0xff) }.join()
+    }
+
+    private static void copyBounded(InputStream input, File output, long maximumBytes) {
+        output.withOutputStream { OutputStream stream ->
+            byte[] buffer = new byte[16384]
+            long total = 0L
+            int read
+            while ((read = input.read(buffer)) != -1) {
+                total += read
+                if (total > maximumBytes) {
+                    throw new GradleException('Vazirmatn asset exceeds its size limit')
+                }
+                stream.write(buffer, 0, read)
+            }
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
-// Android configuration
+// 2. Configuration values
 // -----------------------------------------------------------------------------
+
+def configuredContentManifestUrl = (findProperty('neonMazeContentManifestUrl')
+        ?: System.getenv('NEON_MAZE_CONTENT_MANIFEST_URL') ?: '').toString().trim()
+
+if (!configuredContentManifestUrl.isEmpty()) {
+    try {
+        if (configuredContentManifestUrl.length() > 2048
+                || configuredContentManifestUrl.chars().anyMatch { Character.isISOControl(it) || Character.isWhitespace(it) }) {
+            throw new IllegalArgumentException('manifest URL contains invalid characters')
+        }
+        URL contentUrl = new URL(configuredContentManifestUrl)
+        if (!'https'.equalsIgnoreCase(contentUrl.protocol)
+                || contentUrl.host == null || contentUrl.host.isEmpty()
+                || contentUrl.userInfo != null || contentUrl.ref != null) {
+            throw new IllegalArgumentException(
+                    'manifest URL must be HTTPS without user information or fragments')
+        }
+    } catch (Exception invalidUrl) {
+        throw new GradleException('Invalid NEON MAZE content manifest URL', invalidUrl)
+    }
+}
+
+def escapedContentManifestUrl = configuredContentManifestUrl
+        .replace('\\', '\\\\').replace('"', '\\"')
+
+def vazirmatnRevision = 'v33.003'
+def vazirmatnArchiveSha256 = '0a9afd41967e6f57096a56a181a23f81a2b999b62f1f2a4e4b26736580854fdb'
+def configuredLocalFontDirectory = (findProperty('neonMazeVazirmatnDir')
+        ?: System.getenv('NEON_MAZE_VAZIRMATN_DIR') ?: '').toString().trim()
+
+// -----------------------------------------------------------------------------
+// 3. Android configuration
+// -----------------------------------------------------------------------------
+
 android {
     namespace 'com.neonmaze.app'
-
     compileSdk 36
 
     defaultConfig {
@@ -233,99 +298,71 @@ android {
         targetSdk 36
         versionCode 1
         versionName '1.0.0'
-        buildConfigField 'String', 'CONTENT_MANIFEST_URL', "\"${escapedContentManifestUrl}\""
 
-        // The project is Java-only. No Kotlin, no Compose, no external
-        // annotation processors. Vector drawable support is available from
-        // minSdk 24 without additional flags.
-        vectorDrawables {
-            useSupportLibrary false
-        }
+        buildConfigField 'String', 'CONTENT_MANIFEST_URL', "\"${escapedContentManifestUrl}\""
     }
 
     buildTypes {
         debug {
-            // Debug builds are not minified so stack traces remain readable.
             minifyEnabled false
         }
         release {
-            // R8 is the default shrinker on AGP 9.4.0. Resource shrinking is
-            // enabled only after the full test matrix passes, per the plan.
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
         }
     }
 
-    // Java 17 for both source and bytecode. AGP 9.4.0 defaults to JDK 17,
-    // but declaring it explicitly locks the language level and prevents
-    // accidental regressions when the build environment changes.
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // BuildConfig carries only the optional public content-manifest URL.
-    // Private GitHub tokens, signing keys and credentials must never be placed here.
     buildFeatures {
         buildConfig true
     }
 
-    // No lint baseline is checked in. Lint errors fail the build; warnings
-    // remain visible for engineering review without hiding diagnostics.
     lint {
         abortOnError true
         checkReleaseBuilds true
     }
 }
 
-// Generated assets are registered through the public Variant API. Each variant
-// owns a distinct task and output directory so parallel/multi-variant builds
-// cannot overwrite one another's generated files or temporary download data.
+// -----------------------------------------------------------------------------
+// 4. Variant API wiring for generated font assets
+// -----------------------------------------------------------------------------
+
 androidComponents {
     onVariants { variant ->
         String variantName = variant.name
-        String capitalizedVariantName = variantName.substring(0, 1).toUpperCase(Locale.ROOT) + variantName.substring(1)
-        def variantAssetsDirectory = layout.buildDirectory.dir("generated/neonMazeAssets/${variantName}")
+        String capitalizedVariantName = variantName.substring(0, 1).toUpperCase(Locale.ROOT)
+                + variantName.substring(1)
+        def variantAssetsDirectory = layout.buildDirectory.dir(
+                "generated/neonMazeAssets/${variantName}")
+
         def prepareTask = tasks.register(
                 "prepare${capitalizedVariantName}VazirmatnAssets",
                 PrepareVazirmatnAssetsTask
-        )
-
-        prepareTask.configure { task ->
+        ) { task ->
             task.group = 'build setup'
             task.description = "Prepare verified Vazirmatn font assets for ${variantName}."
+            task.vazirmatnRevision.set(vazirmatnRevision)
+            task.vazirmatnArchiveSha256.set(vazirmatnArchiveSha256)
+            task.localFontDirectory.set(configuredLocalFontDirectory)
             task.outputDirectory.set(variantAssetsDirectory)
-            task.inputs.property('vazirmatnRevision', vazirmatnRevision)
-            task.inputs.property('vazirmatnArchiveSha256', vazirmatnArchiveSha256)
-            task.inputs.property('localFontDirectory', configuredLocalFontDirectory)
-            if (!configuredLocalFontDirectory.isEmpty()) {
-                task.inputs.files(vazirmatnFonts.collect { new File(configuredLocalFontDirectory, it) })
-            }
-            task.outputs.upToDateWhen {
-                vazirmatnFonts.every { name ->
-                    isValidTrueType(task.outputDirectory.get().file("fonts/${name}").asFile)
-                }
-            }
-            task.doLast {
-                prepareVazirmatnAssets(variantName, task.outputDirectory.get().asFile)
-            }
         }
 
         variant.sources.assets.addGeneratedSourceDirectory(
                 prepareTask,
-                { task -> task.outputDirectory }
+                PrepareVazirmatnAssetsTask::getOutputDirectory
         )
     }
 }
 
 // -----------------------------------------------------------------------------
-// Dependencies
+// 5. Dependencies
 // -----------------------------------------------------------------------------
-// The app depends on :core for all game logic, plus four AndroidX artifacts:
-// Activity (Photo Picker, Activity Result API), Lifecycle ViewModel, Core
-// (WindowInsets, compat), and ExifInterface (photo orientation). No Kotlin, no Compose, no Material
-// Components, no third-party runtime library.
+
 dependencies {
     implementation project(':core')
 
