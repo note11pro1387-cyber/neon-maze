@@ -23,7 +23,7 @@ ROOT_DIR=$(CDPATH= cd -P "${SCRIPT_DIR}/../.." && pwd -P) || {
 WRAPPER_DIR="${ROOT_DIR}/gradle/wrapper"
 PROPERTIES_FILE="${WRAPPER_DIR}/gradle-wrapper.properties"
 DESTINATION="${WRAPPER_DIR}/gradle-wrapper.jar"
-DISTRIBUTION_URL='https://services.gradle.org/distributions/gradle-9.6.0-wrapper.jar'
+DISTRIBUTION_URL='https://raw.githubusercontent.com/gradle/gradle/v9.6.0/gradle/wrapper/gradle-wrapper.jar'
 EXPECTED_SHA256='497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7'
 
 fail() {
