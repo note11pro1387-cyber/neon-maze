@@ -1,4 +1,7 @@
 import javax.net.ssl.HttpsURLConnection
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.tasks.OutputDirectory
 
 // -----------------------------------------------------------------------------
 // NEON MAZE — :app module build script
@@ -15,6 +18,13 @@ plugins {
     // Android application plugin. The version is published by the root
     // build.gradle and must not be repeated here.
     id 'com.android.application'
+}
+
+// AGP's Variant API requires generated directories to be exposed as a typed
+// task output. The task is registered once per variant below.
+abstract class PrepareVazirmatnAssetsTask extends DefaultTask {
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDirectory()
 }
 
 // The content endpoint is public data, never an API token or private credential.
@@ -50,7 +60,6 @@ def vazirmatnArchiveSha256 = '0a9afd41967e6f57096a56a181a23f81a2b999b62f1f2a4e4b
 def vazirmatnFonts = ['Vazirmatn-Regular.ttf', 'Vazirmatn-Bold.ttf']
 def configuredLocalFontDirectory = (findProperty('neonMazeVazirmatnDir')
         ?: System.getenv('NEON_MAZE_VAZIRMATN_DIR') ?: '').toString().trim()
-def generatedFontAssets = layout.buildDirectory.dir('generated/neonMazeAssets/main')
 def isValidTrueType = { File file ->
     if (!file.isFile() || file.length() < 40_000L || file.length() > 8L * 1024L * 1024L) return false
     file.withInputStream { input ->
@@ -87,19 +96,10 @@ def copyBounded = { InputStream input, File output, long maximum ->
     }
 }
 
-tasks.register('prepareVazirmatnAssets') {
-    inputs.property('vazirmatnRevision', vazirmatnRevision)
-    inputs.property('vazirmatnArchiveSha256', vazirmatnArchiveSha256)
-    inputs.property('localFontDirectory', configuredLocalFontDirectory)
-    if (!configuredLocalFontDirectory.isEmpty()) {
-        inputs.files(vazirmatnFonts.collect { new File(configuredLocalFontDirectory, it) })
-    }
-    outputs.files(vazirmatnFonts.collect { generatedFontAssets.get().file("fonts/${it}").asFile })
-    outputs.upToDateWhen {
-        vazirmatnFonts.every { name -> isValidTrueType(generatedFontAssets.get().file("fonts/${name}").asFile) }
-    }
-    doLast {
-        File outputDirectory = generatedFontAssets.get().dir('fonts').asFile
+// Keep the asset-generation implementation independent of AGP's variant model.
+// Each variant task supplies its own output directory to this action.
+def prepareVazirmatnAssets = { String variantName, File generatedAssetsDirectory ->
+        File outputDirectory = new File(generatedAssetsDirectory, 'fonts')
         if (!outputDirectory.isDirectory() && !outputDirectory.mkdirs()) {
             throw new GradleException('Unable to create generated Vazirmatn asset directory')
         }
@@ -122,7 +122,8 @@ tasks.register('prepareVazirmatnAssets') {
             return
         }
 
-        File downloadedArchive = new File(layout.buildDirectory.dir('downloads').get().asFile,
+        File downloadCacheDirectory = layout.buildDirectory.dir("downloads/vazirmatn/${variantName}").get().asFile
+        File downloadedArchive = new File(downloadCacheDirectory,
                 "vazirmatn-${vazirmatnRevision}.zip")
         if (downloadedArchive.exists() && sha256File(downloadedArchive) != vazirmatnArchiveSha256) {
             if (!downloadedArchive.delete()) throw new GradleException('Cannot remove invalid cached Vazirmatn archive')
@@ -216,7 +217,6 @@ tasks.register('prepareVazirmatnAssets') {
         } finally {
             archive.close()
         }
-    }
 }
 
 // -----------------------------------------------------------------------------
@@ -233,12 +233,14 @@ android {
         targetSdk 36
         versionCode 1
         versionName '1.0.0'
+        buildConfigField 'String', 'CONTENT_MANIFEST_URL', "\"${escapedContentManifestUrl}\""
 
         // The project is Java-only. No Kotlin, no Compose, no external
         // annotation processors. Vector drawable support is available from
         // minSdk 24 without additional flags.
-        // Note: vectorDrawables.useSupportLibrary is deprecated/removed in AGP 9.
-        // buildConfigField is defined via the Variant API below.
+        vectorDrawables {
+            useSupportLibrary false
+        }
     }
 
     buildTypes {
@@ -269,12 +271,6 @@ android {
         buildConfig true
     }
 
-    sourceSets {
-        main {
-            assets.srcDir(generatedFontAssets)
-        }
-    }
-
     // No lint baseline is checked in. Lint errors fail the build; warnings
     // remain visible for engineering review without hiding diagnostics.
     lint {
@@ -283,26 +279,44 @@ android {
     }
 }
 
-// -----------------------------------------------------------------------------
-// BuildConfig fields via the new Variant API (AGP 9+)
-// -----------------------------------------------------------------------------
-// The legacy buildConfigField inside defaultConfig is deprecated.
-// This block injects the field lazily into all variants.
+// Generated assets are registered through the public Variant API. Each variant
+// owns a distinct task and output directory so parallel/multi-variant builds
+// cannot overwrite one another's generated files or temporary download data.
 androidComponents {
-    onVariants(selector().all()) { variant ->
-        variant.buildConfigFields.put(
-            'CONTENT_MANIFEST_URL',
-            new com.android.build.api.variant.BuildConfigField(
-                'String',
-                "\"${escapedContentManifestUrl}\"",
-                'Optional public content manifest URL'
-            )
+    onVariants { variant ->
+        String variantName = variant.name
+        String capitalizedVariantName = variantName.substring(0, 1).toUpperCase(Locale.ROOT) + variantName.substring(1)
+        def variantAssetsDirectory = layout.buildDirectory.dir("generated/neonMazeAssets/${variantName}")
+        def prepareTask = tasks.register(
+                "prepare${capitalizedVariantName}VazirmatnAssets",
+                PrepareVazirmatnAssetsTask
+        )
+
+        prepareTask.configure { task ->
+            task.group = 'build setup'
+            task.description = "Prepare verified Vazirmatn font assets for ${variantName}."
+            task.outputDirectory.set(variantAssetsDirectory)
+            task.inputs.property('vazirmatnRevision', vazirmatnRevision)
+            task.inputs.property('vazirmatnArchiveSha256', vazirmatnArchiveSha256)
+            task.inputs.property('localFontDirectory', configuredLocalFontDirectory)
+            if (!configuredLocalFontDirectory.isEmpty()) {
+                task.inputs.files(vazirmatnFonts.collect { new File(configuredLocalFontDirectory, it) })
+            }
+            task.outputs.upToDateWhen {
+                vazirmatnFonts.every { name ->
+                    isValidTrueType(task.outputDirectory.get().file("fonts/${name}").asFile)
+                }
+            }
+            task.doLast {
+                prepareVazirmatnAssets(variantName, task.outputDirectory.get().asFile)
+            }
+        }
+
+        variant.sources.assets.addGeneratedSourceDirectory(
+                prepareTask,
+                { task -> task.outputDirectory }
         )
     }
-}
-
-tasks.named('preBuild').configure {
-    dependsOn(tasks.named('prepareVazirmatnAssets'))
 }
 
 // -----------------------------------------------------------------------------
