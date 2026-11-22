@@ -43,18 +43,19 @@ jobs:
         shell: bash
         run: chmod 0755 gradlew tools/ci/bootstrap-gradle-wrapper.sh
 
-      - name: Bootstrap and verify official Gradle Wrapper JAR
+      - name: Bootstrap and verify official Gradle Wrapper JAR (POSIX sh)
         shell: bash
-        run: bash tools/ci/bootstrap-gradle-wrapper.sh
+        run: sh tools/ci/bootstrap-gradle-wrapper.sh
 
       - name: Verify pinned JDK, Wrapper JAR and Gradle runtime
         shell: bash
         run: |
           set -euo pipefail
           java -version
-          printf '%s  %s\n' \
-            '497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7' \
-            'gradle/wrapper/gradle-wrapper.jar' | sha256sum --check --strict
+          (
+            cd gradle/wrapper
+            sha256sum --check --strict gradle-wrapper.jar.sha256
+          )
           ./gradlew --no-daemon --version
 
       - name: Run Core tests, Android lint and assemble Debug APK
