@@ -1,4 +1,5 @@
-# Fetch the official Gradle 9.6.0 Wrapper JAR and verify it before installation.
+# Fetch the official Gradle 9.6.0 Wrapper JAR from the Gradle v9.6.0 source tag.
+# The downloaded bytes are installed only after matching Gradle's published SHA-256.
 # curl.exe is used deliberately so HTTPS is enforced across every redirect.
 $ErrorActionPreference = 'Stop'
 
@@ -6,7 +7,7 @@ $RootDir = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $WrapperDir = Join-Path $RootDir 'gradle\wrapper'
 $PropertiesPath = Join-Path $WrapperDir 'gradle-wrapper.properties'
 $Destination = Join-Path $WrapperDir 'gradle-wrapper.jar'
-$DownloadUrl = 'https://services.gradle.org/distributions/gradle-9.6.0-wrapper.jar'
+$DownloadUrl = 'https://raw.githubusercontent.com/gradle/gradle/v9.6.0/gradle/wrapper/gradle-wrapper.jar'
 $ExpectedSha256 = '497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7'
 $ExpectedDistributionSha256 = 'bbaeb2fef8710818cf0e261201dab964c572f92b942812df0c3620d62a529a01'
 

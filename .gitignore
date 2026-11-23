@@ -53,5 +53,5 @@ secrets.properties
 __pycache__/
 *.py[cod]
 
-# Vazirmatn TTFs are fetched by tools/ci/fetch-vazirmatn-fonts.sh (OFL.txt stays tracked)
-/app/src/main/assets/fonts/*.ttf
+# CI diagnostic log staging (uploaded as a workflow artifact)
+/build-logs/

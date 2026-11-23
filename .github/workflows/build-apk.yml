@@ -31,51 +31,59 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      # androidx.core 1.19.x requires compileSdk 37. API 37 is published only as
-      # the minor-versioned package "android-37.0". AGP 9.4 needs build-tools >= 36.0.0.
-      - name: Set up Android SDK
+      - name: Set up Android SDK tools and accept licenses
         uses: android-actions/setup-android@v4.0.4
         with:
-          packages: |
-            platform-tools
-            platforms;android-37.0
-            build-tools;36.0.0
+          # setup-android v4 parses this value with split(' '), so keep it empty
+          # and install each package explicitly in the following step.
+          packages: ''
+          accept-android-sdk-licenses: true
 
-      - name: Prepare launchers
+      - name: Install required Android SDK packages
         shell: bash
-        run: chmod 0755 gradlew tools/ci/bootstrap-gradle-wrapper.sh tools/ci/fetch-vazirmatn-fonts.sh
+        run: |
+          set -euo pipefail
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-37.0" \
+            "build-tools;36.0.0"
 
-      - name: Bootstrap and verify official Gradle Wrapper JAR
+          test -s "$ANDROID_SDK_ROOT/platforms/android-37.0/android.jar"
+          test -x "$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt2"
+
+      - name: Prepare POSIX Wrapper launchers
         shell: bash
-        run: bash tools/ci/bootstrap-gradle-wrapper.sh
+        run: chmod 0755 gradlew tools/ci/bootstrap-gradle-wrapper.sh
+
+      - name: Bootstrap and verify official Gradle Wrapper JAR (POSIX sh)
+        shell: bash
+        run: sh tools/ci/bootstrap-gradle-wrapper.sh
 
       - name: Verify pinned JDK, Wrapper JAR and Gradle runtime
         shell: bash
         run: |
           set -euo pipefail
           java -version
-          printf '%s  %s\n' \
-            '497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7' \
-            'gradle/wrapper/gradle-wrapper.jar' | sha256sum --check --strict
-          ./gradlew --version
+          (
+            cd gradle/wrapper
+            sha256sum --check --strict gradle-wrapper.jar.sha256
+          )
+          ./gradlew --no-daemon --version
 
-      # Fonts are plain static assets prepared BEFORE Gradle runs.
-      # FONT_SHA_ENFORCE=false: a hash mismatch prints a warning with the real hash
-      # instead of stopping delivery. After the first green run, if the log says
-      # "SHA-256 verified", change it to 'true'.
-      - name: Prepare Vazirmatn fonts
-        shell: bash
-        env:
-          FONT_SHA_ENFORCE: 'false'
-        run: bash tools/ci/fetch-vazirmatn-fonts.sh
-
-      - name: Assemble Debug APK
+      - name: Run Core tests, Android lint and assemble Debug APK
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build-logs
-          ./gradlew --console=plain --stacktrace --warning-mode all \
-            :app:assembleDebug 2>&1 | tee build-logs/01-assemble.log
+          set -o pipefail
+          ./gradlew \
+            --no-daemon \
+            --stacktrace \
+            --warning-mode all \
+            :core:test \
+            :app:lintDebug \
+            :app:assembleDebug \
+            2>&1 | tee build-logs/gradle-build.log
 
       - name: Verify APK and write SHA-256
         shell: bash
@@ -84,12 +92,9 @@ jobs:
           APK='app/build/outputs/apk/debug/app-debug.apk'
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          unzip -l "$APK" | grep -F 'assets/fonts/Vazirmatn-Regular.ttf'
-          unzip -l "$APK" | grep -F 'assets/fonts/Vazirmatn-Bold.ttf'
           sha256sum "$APK" > "$APK.sha256"
           ls -lh "$APK" "$APK.sha256"
 
-      # Uploaded BEFORE tests and lint so the APK is delivered even if they report problems.
       - name: Upload installable Debug APK
         uses: actions/upload-artifact@v7.0.2
         with:
@@ -100,40 +105,14 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Run Core tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p build-logs
-          ./gradlew --console=plain --stacktrace :core:test 2>&1 | tee build-logs/02-core-test.log
-
-      - name: Run Android lint
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p build-logs
-          ./gradlew --console=plain --stacktrace :app:lintDebug 2>&1 | tee build-logs/03-lint.log
-
-      - name: Print root cause of failure
-        if: failure()
-        shell: bash
-        run: |
-          for f in build-logs/*.log; do
-            [ -f "$f" ] || continue
-            echo "=================== $f"
-            if grep -q 'What went wrong' "$f"; then
-              grep -n -A40 -m1 'What went wrong' "$f"
-              echo "--- Caused by:"; grep -n 'Caused by' "$f" | head -20
-            fi
-          done
-
-      - name: Upload build logs, test and lint diagnostics
+      - name: Upload test, lint and build diagnostics
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
           name: neon-maze-build-diagnostics-${{ github.run_number }}
           path: |
-            build-logs/
+            build-logs/gradle-build.log
+            build/reports/problems/problems-report.html
             core/build/reports/tests/test/
             core/build/test-results/test/
             app/build/reports/lint-results-debug.html

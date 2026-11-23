@@ -6,7 +6,7 @@
 //   :core  — pure Java game logic, geometry, collision, replay, scoring
 //
 // Toolchain lock:
-//   AGP 9.4.0, Gradle 9.6.0, JDK 17, compileSdk/targetSdk 36, minSdk 24.
+//   AGP 9.4.0, Gradle 9.6.0, JDK 17, compileSdk 37.0, targetSdk 36, minSdk 24.
 // -----------------------------------------------------------------------------
 
 pluginManagement {

@@ -36,7 +36,7 @@
 - `ContentPackInstaller`: HTTPS-only، اندازهٔ محدود، SHA-256، allow-list، اعتبارسنجی ZIP و مسیرها، استخراج به staging خصوصی، فعال‌سازی اتمیک و نگهداری نسخهٔ قبلی.
 - `ContentAssetResolver`: اولویت نسخهٔ فعال و fallback به Assets APK.
 - مصرف نمونهٔ واقعی محتوای اختیاری `ui/home-hero.webp` با Decode غیرهمزمان و downsampling.
-- فونت Vazirmatn (v33.003، دو وزن ثابت + SIL OFL 1.1) پیش از اجرای Gradle با `tools/ci/fetch-vazirmatn-fonts.sh` در `app/src/main/assets/fonts/` آماده می‌شود (کنترل SHA-256 آرشیو، اندازه، Magic bytes). فایل‌های TTF در Git ثبت نمی‌شوند. ورودی آفلاین: `NEON_MAZE_VAZIRMATN_ARCHIVE`.
+- دریافت نسخهٔ ثابت Vazirmatn در Build، کنترل SHA-256 و بسته‌بندی دو وزن ثابت + متن SIL OFL 1.1؛ ورودی فونت محلی نیز Gradle Task Input است و Redirectها باید HTTPS بمانند. فایل‌های فونت باینری در سورس/تحویل متنی Commit نمی‌شوند.
 - اینترنت فقط برای به‌روزرسانی اختیاری؛ اگر URL تنظیم نشود، هیچ درخواست شبکه‌ای انجام نمی‌شود. بازی کامل از منابع APK قابل اجرا باقی می‌ماند.
 
 ## کنترل‌های Phase02 انجام‌شده
@@ -78,7 +78,7 @@
 
 ## Phase03-A — Build Foundation (فایل‌ها و تنظیمات نهایی)
 
-- نسخه‌های قفل‌شده: AGP 9.4.0، Gradle 9.6.0، JDK 17، compile/target SDK 36، Build Tools 36.0.0.
+- نسخه‌های قفل‌شده: AGP 9.4.0، Gradle 9.6.0، JDK 17، compile SDK 37.0 / target SDK 36، Build Tools 36.0.0.
 - `.gitignore`، `gradlew`، `gradlew.bat` و `gradle-wrapper.properties` آماده‌اند.
 - Hash رسمی Wrapper JAR برابر `497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7` و Hash توزیع Gradle برابر `bbaeb2fef8710818cf0e261201dab964c572f92b942812df0c3620d62a529a01` قفل شده‌اند.
 - چون JAR در بسته/Cache نبود و شبکهٔ مستقیم محیط اجرا غیرفعال بود، JAR ساختگی تولید نشده است. Bootstrapهای Bash و PowerShell آن را در اولین اجرا از HTTPS رسمی دریافت و پیش از نصب SHA-256 را بررسی می‌کنند.
@@ -99,3 +99,12 @@
 - راهنمای دقیق گرفتن APK از Actions و چک‌لیست نصب/تست در `docs/release/BUILD-AND-INSTALL-FA.md` قرار دارد.
 
 **گزارش شواهد و محدودیت‌ها:** `docs/release/PHASE03-PARTA-REPORT-FA.md` و `docs/release/PHASE-LEDGER.md`.
+
+
+## Build recovery update — 2026-11-23
+
+The CI/build recovery package now pins Android Compile SDK 37.0 while keeping targetSdk 36, minSdk 24, Build Tools 36.0.0, AGP 9.4.0, Gradle 9.6.0 and JDK 17. The Android SDK packages are installed with explicit `sdkmanager --install` arguments because `android-actions/setup-android@v4.0.4` tokenizes its `packages` input on spaces.
+
+The Vazirmatn generator is now a typed Gradle task whose `@OutputDirectory DirectoryProperty` is connected through `androidComponents.onVariants(selector().all())` and `variant.sources.assets.addGeneratedSourceDirectory`. The task retains mandatory SHA-256 validation; the legacy SourceSet Provider wiring is not used.
+
+The Workflow gates APK upload behind Core tests, Android Lint and APK assembly. A real GitHub Actions run is still required to establish successful Gradle configuration, dependency resolution, AAPT/resource processing, Lint and APK creation. No build success is asserted by this source snapshot.

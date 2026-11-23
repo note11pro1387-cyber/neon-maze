@@ -1,16 +1,8 @@
 #!/bin/sh
-# NEON MAZE preflight: install the official, checksum-pinned Wrapper JAR if it is
-# missing. The bootstrap script needs bash (pipefail, [[ ]]), so it must never be
-# run with plain sh/dash.
+# NEON MAZE preflight: install the official, checksum-pinned Wrapper JAR if needed.
 APP_HOME_PREFLIGHT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
-if [ ! -f "$APP_HOME_PREFLIGHT/gradle/wrapper/gradle-wrapper.jar" ] \
-   && [ -f "$APP_HOME_PREFLIGHT/tools/ci/bootstrap-gradle-wrapper.sh" ]; then
-    if command -v bash >/dev/null 2>&1; then
-        bash "$APP_HOME_PREFLIGHT/tools/ci/bootstrap-gradle-wrapper.sh" || exit $?
-    else
-        echo "ERROR: bash is required to bootstrap the Gradle Wrapper JAR." >&2
-        exit 3
-    fi
+if [ -f "$APP_HOME_PREFLIGHT/tools/ci/bootstrap-gradle-wrapper.sh" ]; then
+    sh "$APP_HOME_PREFLIGHT/tools/ci/bootstrap-gradle-wrapper.sh" || exit $?
 fi
 #
 # Copyright © 2015 the original authors.
