@@ -256,7 +256,11 @@ public final class ContentPackInstaller {
             }
             if (Thread.currentThread().isInterrupted()) throw new IOException("Content installation cancelled");
             notify(listener, Phase.ACTIVATING, 0, 0, 1);
-            Os.rename(staging.getAbsolutePath(), target.getAbsolutePath());
+            try {
+                Os.rename(staging.getAbsolutePath(), target.getAbsolutePath());
+            } catch (android.system.ErrnoException error) {
+                throw new IOException("Unable to atomically activate the downloaded content pack", error);
+            }
             staging = null;
             writeActivePointer(manifest.contentVersion, manifest.minAppVersionCode,
                     manifest.maxAppVersionCode, actualHash);
