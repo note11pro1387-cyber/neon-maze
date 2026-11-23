@@ -1,7 +1,7 @@
 package com.neonmaze.app;
 
 import android.content.Context;
-import android.os.Choreographer;
+import android.view.Choreographer;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
