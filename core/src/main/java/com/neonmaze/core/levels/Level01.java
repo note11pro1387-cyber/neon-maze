@@ -19,7 +19,8 @@ import java.util.List;
  *
  * <p>First-contact teaching level: enter Start, maintain one continuous
  * touch, trace a wide U-shaped corridor through two 90-degree turns and
- * reach Goal. There are no branches, objectives, gates or hazards.</p>
+ * reach Goal. A small side pocket off the first leg offers one optional
+ * Echo Shard without changing the mandatory teaching route.</p>
  *
  * <p>Start/goal anchors remain at the authored AI-01 locations. The validator
  * checks each anchor with the full effective disk; the trigger circle is not
@@ -57,25 +58,28 @@ public final class Level01 {
         Objective signalCore = Objective.mandatory("signal-core",
                 Zone.circle("signal-core-zone", 200.0, 480.0, 22.0),
                 "objective_signal_core_name", "objective_signal_core_desc");
-        // A short, optional branch turns the otherwise wide lower runway into
-        // a deliberate precision-reward detour without blocking the main route.
+        // The reward is a real lateral excursion inside the broad first leg.
+        // Its route spur is bidirectional so collecting it never traps the player.
         Objective echoShard = Objective.optional("optional-01",
-                Zone.circle("echo-shard-zone", 500.0, 845.0, 14.0),
+                Zone.circle("echo-shard-zone", 260.0, 480.0, 14.0),
                 "objective_echo_shard_name", "objective_echo_shard_desc");
 
         RouteNode startNode = new RouteNode("n0", new Vec2(200.0, 150.0));
-        RouteNode lowerTurn = new RouteNode("n1", new Vec2(200.0, 800.0));
-        RouteNode upperTurn = new RouteNode("n2", new Vec2(800.0, 800.0));
-        RouteNode goalNode = new RouteNode("n3", new Vec2(800.0, 150.0));
-        RouteNode echoShardNode = new RouteNode("n4", new Vec2(500.0, 845.0));
+        RouteNode signalNode = new RouteNode("n1", new Vec2(200.0, 480.0));
+        RouteNode lowerTurn = new RouteNode("n2", new Vec2(200.0, 800.0));
+        RouteNode upperTurn = new RouteNode("n3", new Vec2(800.0, 800.0));
+        RouteNode goalNode = new RouteNode("n4", new Vec2(800.0, 150.0));
+        RouteNode echoShardNode = new RouteNode("n5", new Vec2(260.0, 480.0));
         RouteGraph graph = new RouteGraph(
-                immutableList(startNode, lowerTurn, upperTurn, goalNode, echoShardNode),
+                immutableList(startNode, signalNode, lowerTurn, upperTurn,
+                        goalNode, echoShardNode),
                 immutableList(
                         new RouteEdge("n0", "n1", 200.0),
                         new RouteEdge("n1", "n2", 200.0),
+                        new RouteEdge("n1", "n5", 100.0),
+                        new RouteEdge("n5", "n1", 100.0),
                         new RouteEdge("n2", "n3", 200.0),
-                        new RouteEdge("n1", "n4", 100.0),
-                        new RouteEdge("n4", "n2", 100.0)));
+                        new RouteEdge("n3", "n4", 200.0)));
 
         return new LevelDefinition.Builder()
                 .levelId(LEVEL_ID)
