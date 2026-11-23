@@ -95,7 +95,7 @@ public final class Level05 {
         Zone stabilizerZone = Zone.circle("core-stabilizer-zone", 500.0, 600.0, 18.0);
         Objective stabilizer = Objective.mandatory("core-stabilizer", stabilizerZone,
                 "objective_core_stabilizer_name", "objective_core_stabilizer_desc");
-        Zone phaseZone = Zone.circle("phase-shard-zone", 530.0, 250.0, 10.0);
+        Zone phaseZone = Zone.circle("phase-shard-zone", 520.0, 280.0, 10.0);
         Objective phaseShard = Objective.optional("optional-02", phaseZone,
                 "objective_phase_shard_name", "objective_phase_shard_desc");
 
@@ -122,7 +122,7 @@ public final class Level05 {
         Zone safeZone = Zone.circle("safe-01", 500.0, 240.0, SAFE_ZONE_RADIUS);
 
         RouteNode startNode = new RouteNode("n0", new Vec2(500.0, 150.0));
-        RouteNode phaseShardNode = new RouteNode("n5", new Vec2(530.0, 250.0));
+        RouteNode phaseShardNode = new RouteNode("n5", new Vec2(520.0, 280.0));
         RouteNode junction = new RouteNode("n1", new Vec2(500.0, 500.0));
         RouteNode keyNode = new RouteNode("n2", new Vec2(250.0, 500.0));
         RouteNode optionalNode = new RouteNode("n3", new Vec2(750.0, 500.0));
