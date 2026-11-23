@@ -317,4 +317,56 @@
     <string name="startup_continue_offline">Continue with local resources</string>
     <string name="startup_local_privacy">Player profile and progress remain on this device.</string>
 
+
+    <!-- Mission and objective content -->
+    <string name="gameplay_objective_primary">Next objective: %1$s (%2$d of %3$d)</string>
+    <string name="gameplay_objective_blocked_named">Exit blocked — find %1$s first.</string>
+    <string name="gameplay_objective_primary_done">Main objectives complete — reach the exit.</string>
+    <string name="gameplay_no_objectives">Touch Start and trace the glowing corridor to the exit.</string>
+    <string name="campaign_mission_mandatory_item">◆ %1$s — %2$s</string>
+    <string name="campaign_mission_optional_item">◇ %1$s — %2$s</string>
+    <string name="campaign_exit_instruction">Keep one finger on the screen until you reach the Exit marker to complete the run.</string>
+    <string name="mode_selected_mission_heading">Selected route mission</string>
+    <string name="mode_daily_mission_heading">Today's challenge mission</string>
+    <string name="mode_mission_counts">%1$d mandatory objectives · %2$d optional objectives</string>
+    <string name="mode_daily_identity">UTC date: %1$s · ID: %2$s</string>
+
+    <!-- Level 01: Awakening -->
+    <string name="objective_signal_core_name">Signal Core</string>
+    <string name="objective_signal_core_desc">Collect the amber marker on the vertical leg.</string>
+    <string name="objective_echo_shard_name">Echo Shard</string>
+    <string name="objective_echo_shard_desc">Take the lower branch for an optional reward.</string>
+
+    <!-- Level 02: Precision Core -->
+    <string name="objective_route_beacon_name">Route Beacon</string>
+    <string name="objective_route_beacon_desc">Activate the upper beacon before choosing the left or right route.</string>
+    <string name="objective_precision_shard_name">Precision Shard</string>
+    <string name="objective_precision_shard_desc">Move deliberately away from the narrow right-hand line to collect this reward.</string>
+
+    <!-- Level 03: Pulse Reactor -->
+    <string name="objective_reactor_cell_name">Reactor Cell</string>
+    <string name="objective_reactor_cell_desc">Collect the cell before the pulsing gate.</string>
+    <string name="objective_stabilizer_name">Stabilizer</string>
+    <string name="objective_stabilizer_desc">Activate the reactor stabilizer after crossing the gate.</string>
+    <string name="objective_afterglow_shard_name">Afterglow Shard</string>
+    <string name="objective_afterglow_shard_desc">Take the upper detour for an optional reward.</string>
+
+    <!-- Level 04: Energy Vault -->
+    <string name="objective_vault_key_name">Vault Key</string>
+    <string name="objective_vault_key_desc">Enter the left branch, collect the key and return to the central junction.</string>
+    <string name="objective_vault_shard_name">Vault Shard</string>
+    <string name="objective_vault_shard_desc">Search the right branch for an optional reward.</string>
+    <string name="objective_exit_echo_name">Exit Echo</string>
+    <string name="objective_exit_echo_desc">After unlocking the gate, find the small detour near the exit.</string>
+
+    <!-- Level 05: The Core -->
+    <string name="objective_core_key_name">Core Key</string>
+    <string name="objective_core_key_desc">Find the key in the left branch to unlock the exit.</string>
+    <string name="objective_core_stabilizer_name">Core Stabilizer</string>
+    <string name="objective_core_stabilizer_desc">Activate the stabilizer after crossing the timed gate.</string>
+    <string name="objective_core_shard_name">Core Shard</string>
+    <string name="objective_core_shard_desc">Search the right branch for an optional core shard.</string>
+    <string name="objective_phase_shard_name">Phase Shard</string>
+    <string name="objective_phase_shard_desc">Take the upper detour before the timed gate for an optional reward.</string>
+
 </resources>
