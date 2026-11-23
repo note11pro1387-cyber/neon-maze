@@ -99,7 +99,7 @@ public final class Level03 {
                         new RouteEdge("n3", "n4", 380.0),
                         new RouteEdge("n4", "n5", 380.0),
                         new RouteEdge("n5", "n6", 160.0),
-                        new RouteEdge("n6", "n7", 160.0),
+                        new RouteEdge("n6", "n5", 160.0),
                         new RouteEdge("n5", "n7", 380.0)));
 
         return new LevelDefinition.Builder()
