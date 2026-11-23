@@ -44,7 +44,7 @@ import java.util.List;
 public final class Level04 {
 
     public static final String LEVEL_ID = "level-04-energy-vault";
-    public static final int LEVEL_REVISION = 1;
+    public static final int LEVEL_REVISION = 2;
     public static final String DISPLAY_NAME_KEY = "level_04_name";
     public static final String EXIT_KEY_ID = "exit-key";
 
@@ -80,9 +80,14 @@ public final class Level04 {
         Zone goal = Zone.circle("goal", 500.0, 820.0, GOAL_RADIUS);
 
         Zone keyZone = Zone.circle("key-01-zone", 250.0, 500.0, OBJECTIVE_RADIUS);
-        Objective key = Objective.keyGrant("key-01", keyZone, EXIT_KEY_ID, null);
+        Objective key = Objective.keyGrant("key-01", keyZone, EXIT_KEY_ID, null,
+                "objective_vault_key_name", "objective_vault_key_desc");
         Zone optionalZone = Zone.circle("optional-01-zone", 750.0, 500.0, OBJECTIVE_RADIUS);
-        Objective optional = Objective.optional("optional-01", optionalZone);
+        Objective optional = Objective.optional("optional-01", optionalZone,
+                "objective_vault_shard_name", "objective_vault_shard_desc");
+        Zone exitEchoZone = Zone.circle("exit-echo-zone", 550.0, 780.0, 12.0);
+        Objective exitEcho = Objective.optional("optional-02", exitEchoZone,
+                "objective_exit_echo_name", "objective_exit_echo_desc");
 
         Zone exitPassage = Zone.polygon("exit-gate-passage", immutablePoints(
                 new Vec2(400.0, 650.0),
@@ -98,10 +103,12 @@ public final class Level04 {
         RouteNode keyNode = new RouteNode("n2", new Vec2(250.0, 500.0));
         RouteNode optionalNode = new RouteNode("n3", new Vec2(750.0, 500.0));
         RouteNode afterGateNode = new RouteNode("n4", new Vec2(500.0, 780.0));
-        RouteNode goalNode = new RouteNode("n5", new Vec2(500.0, 820.0));
+        RouteNode exitEchoNode = new RouteNode("n5", new Vec2(550.0, 780.0));
+        RouteNode goalNode = new RouteNode("n6", new Vec2(500.0, 820.0));
 
         RouteGraph graph = new RouteGraph(
-                immutableList(startNode, junction, keyNode, optionalNode, afterGateNode, goalNode),
+                immutableList(startNode, junction, keyNode, optionalNode,
+                        afterGateNode, exitEchoNode, goalNode),
                 immutableList(
                         new RouteEdge("n0", "n1", ARM_WIDTH),
                         new RouteEdge("n1", "n2", ARM_WIDTH),
@@ -109,7 +116,9 @@ public final class Level04 {
                         new RouteEdge("n1", "n3", ARM_WIDTH),
                         new RouteEdge("n3", "n1", ARM_WIDTH),
                         new RouteEdge("n1", "n4", ARM_WIDTH),
-                        new RouteEdge("n4", "n5", ARM_WIDTH)
+                        new RouteEdge("n4", "n5", 120.0),
+                        new RouteEdge("n5", "n6", 120.0),
+                        new RouteEdge("n4", "n6", ARM_WIDTH)
                 ));
 
         return new LevelDefinition.Builder()
@@ -124,7 +133,7 @@ public final class Level04 {
                 .playerRadius(PLAYER_RADIUS)
                 .safetyMargin(SAFETY_MARGIN)
                 .routeGraph(graph)
-                .objectives(immutableList(key, optional))
+                .objectives(immutableList(key, optional, exitEcho))
                 .gates(Collections.singletonList(exitGate))
                 .safeZones(Collections.<Zone>emptyList())
                 .parTimeMs(PAR_TIME_MS)
