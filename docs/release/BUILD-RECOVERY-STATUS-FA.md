@@ -43,3 +43,12 @@ Lifecycle به 2.11.0 تنزل داده نشده است. فونت‌ها به د
 - Gradle/AGP واقعی در این محیط اجرا نشده است؛ بنابراین نتیجهٔ Core Tests، AAPT، Lint، Dependency Metadata و APK همچنان **تأییدنشده** است.
 - GitHub Actions باید پس از جایگزینی سورس اجرا شود. موفقیت آن، شرط تحویل APK محسوب می‌شود.
 - نصب روی دستگاه و آزمون Gameplay، ذخیره‌سازی و عملکرد، خارج از این بسته و در مرحلهٔ QA دستگاه است.
+
+## بررسی GitHub Actions Run #17 — 2026-11-23
+
+- Run ID: `45169342813`؛ Commit اجراشده: `cc53f4ad42adcab3ba6bfc8b2099c6fd4116fe70`.
+- راه‌اندازی Runner، Checkout، نصب JDK 17، نصب Android SDK، Bootstrap و بررسی SHA-256 مربوط به Gradle Wrapper و اجرای Gradle 9.6.0 همگی موفق شدند.
+- شکست در پیکربندی `:app` و فایل `app/build.gradle` خط ۴۳۳ رخ داد: `No signature of method: java.lang.String.positive()`. علت، شروع خط بعدی با `+` بود؛ Groovy آن را به‌عنوان unary plus روی مقدار String تفسیر می‌کرد.
+- عبارت ساخت نام Variant اصلاح شد تا عملگر `+` در همان خطِ عبارت قبلی قرار بگیرد. این اصلاح صرفاً نحوی است و رفتار نام‌گذاری Variant را تغییر نمی‌دهد.
+- چون پیکربندی پروژه شکست خورد، Core tests، Android Lint و APK assembly در این Run اجرا نشدند؛ APK نیز ساخته یا Upload نشد.
+- این اصلاح در بستهٔ سورس فعلی اعمال شده است. موفقیت Build کامل هنوز تأیید نشده و به اجرای بعدی GitHub Actions وابسته است.

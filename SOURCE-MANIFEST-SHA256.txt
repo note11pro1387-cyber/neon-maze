@@ -1,13 +1,8 @@
-NEON MAZE — SOURCE FILE SHA-256 MANIFEST
-Generated: 2026-11-23
-GitHub baseline: 89fe60029ef1a7aa7188d28c6e85d72b8601dc3f
-Note: this manifest intentionally excludes itself.
-
 cc82aef3583ef721ae9a141151c1a333cfbc435c754d6c738a0b2cd05fb0f9b8  .github/workflows/build-apk.yml
 8e6d845475e055fe22be8874ed996ac198973572419b5aa3cab4a744edfcb883  .gitignore
-ecb9e6f21d668eba44e05f31b9e2c36d43fe23301d38ec240f5851a76759c136  PROJECT-STRUCTURE-STATUS.md
+f8b68a7fc2055f90ea6603a3536a8d65f46e6e4bb85c7b5ddc1e1be430e17c41  PROJECT-STRUCTURE-STATUS.md
 d89afa73892c21f9ed2aad6c4625db1f64853fdc986efc93a277cc083ea10fb8  README.md
-04493ad2e199fcbb7017b44f2f31531e43a604d32c07e1493a1abc860aba55a4  app/build.gradle
+5b399415f43bc1a369dacf38a269ee03e071c660735672eb4c53531856e5a19f  app/build.gradle
 581be84c011276d93a07af3832c874bd42898e9b505a2016a21e042d799215d2  app/src/main/AndroidManifest.xml
 1b6f51fe55e89c6360728338a39d4278e9b2175ede9cb3519096a8996b5baa38  app/src/main/assets/fonts/OFL.txt
 27b7af0159c1d24d4c15e804cf311e34b79182a1f2c1a629a94f9dde382aa198  app/src/main/java/com/neonmaze/app/AchievementsScreen.java
@@ -53,7 +48,7 @@ d666cae86e4009e705c994774d1fb57fc31e18d9b12ebf8d943e1d4f757d59b3  core/src/main/
 2e2af5e4bf82c7508ffd4811bc6ea313326c29753d175190e9df4915af00907d  core/src/test/java/com/neonmaze/core/CoreAcceptanceTest.java
 e1b09d379f9d7ce585cab0953b0ef7c319b94e149a7e07e22d25f5475fa9c17a  design-source/icons-master.svg
 c8d490448d56991c4219f7294c0bf99bed272c5691593962f9971f5ffca0fa82  docs/release/BUILD-AND-INSTALL-FA.md
-4bc0d8f1fe45c707ad05cee6442b0dea45f11a6837ba990e6db00d8c27231eee  docs/release/BUILD-RECOVERY-STATUS-FA.md
+9a5b2ab4b7aa9c1489192bd2daf09e118d30f31e914bf81c649e99efdf0e79ec  docs/release/BUILD-RECOVERY-STATUS-FA.md
 4b56ac8548d88b78be0a19746d8bafc97d586ef2b4abca36490071e48cd09fee  docs/release/CONTENT-PACK-FORMAT.md
 50ad3dc2f6a05e36b16c0c8fb2066adef31de1bc8bd0c36e17da1e73a2897580  docs/release/PHASE-LEDGER.md
 d4d870a2369ac46e369af1bbbcb0bd6786a34740073a96b53af238a0e843e074  docs/release/PHASE02-REPORT-FA.md

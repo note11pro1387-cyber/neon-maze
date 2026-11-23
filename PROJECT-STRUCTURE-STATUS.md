@@ -108,3 +108,7 @@ The CI/build recovery package now pins Android Compile SDK 37.0 while keeping ta
 The Vazirmatn generator is now a typed Gradle task whose `@OutputDirectory DirectoryProperty` is connected through `androidComponents.onVariants(selector().all())` and `variant.sources.assets.addGeneratedSourceDirectory`. The task retains mandatory SHA-256 validation; the legacy SourceSet Provider wiring is not used.
 
 The Workflow gates APK upload behind Core tests, Android Lint and APK assembly. A real GitHub Actions run is still required to establish successful Gradle configuration, dependency resolution, AAPT/resource processing, Lint and APK creation. No build success is asserted by this source snapshot.
+
+## CI recovery follow-up — Run #17
+
+Run #17 (`45169342813`, commit `cc53f4ad42adcab3ba6bfc8b2099c6fd4116fe70`) passed SDK installation, Wrapper bootstrap/checksum validation and Gradle runtime verification, then failed while evaluating `app/build.gradle:433`. Groovy parsed a leading-line `+` as unary `positive()` on a String. The Variant-name concatenation was corrected by keeping `+` on the preceding expression line. No Core tests, Lint, or APK assembly ran in that attempt; the next CI run remains the required verification.
