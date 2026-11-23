@@ -335,7 +335,7 @@
     <string name="objective_signal_core_name">Signal Core</string>
     <string name="objective_signal_core_desc">Collect the amber marker on the vertical leg.</string>
     <string name="objective_echo_shard_name">Echo Shard</string>
-    <string name="objective_echo_shard_desc">Take the lower branch for an optional reward.</string>
+    <string name="objective_echo_shard_desc">Move slightly to the right of the main line for an optional reward.</string>
 
     <!-- Level 02: Precision Core -->
     <string name="objective_route_beacon_name">Route Beacon</string>
