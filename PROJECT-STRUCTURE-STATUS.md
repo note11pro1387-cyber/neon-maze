@@ -36,7 +36,7 @@
 - `ContentPackInstaller`: HTTPS-only، اندازهٔ محدود، SHA-256، allow-list، اعتبارسنجی ZIP و مسیرها، استخراج به staging خصوصی، فعال‌سازی اتمیک و نگهداری نسخهٔ قبلی.
 - `ContentAssetResolver`: اولویت نسخهٔ فعال و fallback به Assets APK.
 - مصرف نمونهٔ واقعی محتوای اختیاری `ui/home-hero.webp` با Decode غیرهمزمان و downsampling.
-- دریافت نسخهٔ ثابت Vazirmatn در Build، کنترل SHA-256 و بسته‌بندی دو وزن ثابت + متن SIL OFL 1.1؛ ورودی فونت محلی نیز Gradle Task Input است و Redirectها باید HTTPS بمانند. فایل‌های فونت باینری در سورس/تحویل متنی Commit نمی‌شوند.
+- فونت Vazirmatn (v33.003، دو وزن ثابت + SIL OFL 1.1) پیش از اجرای Gradle با `tools/ci/fetch-vazirmatn-fonts.sh` در `app/src/main/assets/fonts/` آماده می‌شود (کنترل SHA-256 آرشیو، اندازه، Magic bytes). فایل‌های TTF در Git ثبت نمی‌شوند. ورودی آفلاین: `NEON_MAZE_VAZIRMATN_ARCHIVE`.
 - اینترنت فقط برای به‌روزرسانی اختیاری؛ اگر URL تنظیم نشود، هیچ درخواست شبکه‌ای انجام نمی‌شود. بازی کامل از منابع APK قابل اجرا باقی می‌ماند.
 
 ## کنترل‌های Phase02 انجام‌شده
