@@ -823,6 +823,7 @@ public final class FeedbackSystem {
     }
 
     /** API-26 implementation kept isolated from the minSdk 24 call path. */
+    @RequiresApi(Build.VERSION_CODES.O)
     private static final class Api26AudioFocus {
         private Api26AudioFocus() { }
 
@@ -851,6 +852,7 @@ public final class FeedbackSystem {
     }
 
     /** API-26 vibration implementation isolated for API 24/25 verification. */
+    @RequiresApi(Build.VERSION_CODES.O)
     private static final class Api26Vibration {
         private Api26Vibration() { }
 
@@ -865,6 +867,7 @@ public final class FeedbackSystem {
     }
 
     /** API-31 vibrator service lookup isolated behind the SDK guard. */
+    @RequiresApi(Build.VERSION_CODES.S)
     private static final class Api31Vibration {
         private Api31Vibration() { }
 
