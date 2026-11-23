@@ -352,7 +352,10 @@ public final class ScreenUI extends FrameLayout {
             case ACHIEVEMENTS:
                 screen = new AchievementsScreen(activity, ui, achievementRows, levelProgress,
                         achievementsLoading, achievementsLoadFailed,
-                        this::refreshAchievements, this::onBackPressed).create();
+                        new AchievementsScreen.Actions() {
+                    @Override public void onRetry() { refreshAchievements(); }
+                    @Override public void onBack() { onBackPressed(); }
+                }).create();
                 break;
             case GAME:
                 screen = gameView == null ? new View(activity) : gameView;
