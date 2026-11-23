@@ -255,12 +255,20 @@ public final class GameHud extends FrameLayout {
         int collected = 0;
         int optionalCollected = 0;
         int optionalTotal = 0;
+        int mandatoryCollected = 0;
+        int mandatoryTotal = 0;
+        Objective nextMandatory = null;
         for (Objective objective : level.objectives()) {
-            if (objective.type() == ObjectiveType.OPTIONAL) optionalTotal++;
-            if (engine.isObjectiveCollected(objective.id())) {
-                collected++;
-                if (objective.type() == ObjectiveType.OPTIONAL) optionalCollected++;
+            boolean objectiveCollected = engine.isObjectiveCollected(objective.id());
+            if (objective.type() == ObjectiveType.OPTIONAL) {
+                optionalTotal++;
+                if (objectiveCollected) optionalCollected++;
+            } else {
+                mandatoryTotal++;
+                if (objectiveCollected) mandatoryCollected++;
+                else if (nextMandatory == null) nextMandatory = objective;
             }
+            if (objectiveCollected) collected++;
         }
         boolean blocked = engine.isObjectiveBlocked();
         if (!shortLandscape) objectiveView.setVisibility(VISIBLE);
@@ -271,19 +279,29 @@ public final class GameHud extends FrameLayout {
             lastCollectedOptional = optionalCollected;
             lastObjectiveBlocked = blocked;
             String objectiveText;
-            if (blocked) {
-                objectiveText = getResources().getString(R.string.gameplay_objective_blocked);
-            } else if (level.objectives().isEmpty()) {
+            if (level.objectives().isEmpty()) {
+                // Tutorial and intentionally objective-light exercises still have
+                // a clear win condition; never present an empty mission as "no goal".
                 objectiveText = getResources().getString(R.string.gameplay_no_objectives);
-            } else if (optionalTotal > 0) {
-                objectiveText = getResources().getString(R.string.gameplay_objectives_combined,
-                        getResources().getString(R.string.gameplay_objectives_summary,
-                                collected, level.objectives().size()),
-                        getResources().getString(R.string.gameplay_objectives_optional,
-                                optionalCollected, optionalTotal));
             } else {
-                objectiveText = getResources().getString(R.string.gameplay_objectives_summary,
-                        collected, level.objectives().size());
+                String primary;
+                if (nextMandatory != null) {
+                    String objectiveName = objectiveName(nextMandatory);
+                    primary = getResources().getString(blocked
+                                    ? R.string.gameplay_objective_blocked_named
+                                    : R.string.gameplay_objective_primary,
+                            objectiveName, mandatoryCollected + 1, mandatoryTotal);
+                } else {
+                    primary = getResources().getString(R.string.gameplay_objective_primary_done);
+                }
+                if (optionalTotal > 0) {
+                    objectiveText = getResources().getString(R.string.gameplay_objectives_combined,
+                            primary,
+                            getResources().getString(R.string.gameplay_objectives_optional,
+                                    optionalCollected, optionalTotal));
+                } else {
+                    objectiveText = primary;
+                }
             }
             objectiveView.setText(objectiveText.trim());
             objectiveView.setTextColor(blocked
@@ -332,6 +350,14 @@ public final class GameHud extends FrameLayout {
             gateView.setVisibility(INVISIBLE);
         }
         if (state != lastEngineState) lastEngineState = state;
+    }
+
+    private String objectiveName(Objective objective) {
+        String key = objective.displayNameKey();
+        if (key == null || key.isEmpty()) return objective.id();
+        int resourceId = getResources().getIdentifier(
+                key, "string", getContext().getPackageName());
+        return resourceId == 0 ? objective.id() : getResources().getString(resourceId);
     }
 
     @Nullable
