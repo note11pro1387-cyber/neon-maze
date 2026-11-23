@@ -46,7 +46,7 @@ import java.util.List;
 public final class Level05 {
 
     public static final String LEVEL_ID = "level-05-the-core";
-    public static final int LEVEL_REVISION = 1;
+    public static final int LEVEL_REVISION = 2;
     public static final String DISPLAY_NAME_KEY = "level_05_name";
     public static final String EXIT_KEY_ID = "exit-key";
 
@@ -87,9 +87,17 @@ public final class Level05 {
         Zone goal = Zone.circle("goal", 500.0, 820.0, START_GOAL_RADIUS);
 
         Zone keyZone = Zone.circle("key-01-zone", 250.0, 500.0, OBJECTIVE_RADIUS);
-        Objective key = Objective.keyGrant("key-01", keyZone, EXIT_KEY_ID, null);
+        Objective key = Objective.keyGrant("key-01", keyZone, EXIT_KEY_ID, null,
+                "objective_core_key_name", "objective_core_key_desc");
         Zone optionalZone = Zone.circle("optional-01-zone", 750.0, 500.0, OBJECTIVE_RADIUS);
-        Objective optional = Objective.optional("optional-01", optionalZone);
+        Objective optional = Objective.optional("optional-01", optionalZone,
+                "objective_core_shard_name", "objective_core_shard_desc");
+        Zone stabilizerZone = Zone.circle("core-stabilizer-zone", 500.0, 600.0, 18.0);
+        Objective stabilizer = Objective.mandatory("core-stabilizer", stabilizerZone,
+                "objective_core_stabilizer_name", "objective_core_stabilizer_desc");
+        Zone phaseZone = Zone.circle("phase-shard-zone", 530.0, 250.0, 10.0);
+        Objective phaseShard = Objective.optional("optional-02", phaseZone,
+                "objective_phase_shard_name", "objective_phase_shard_desc");
 
         Zone timedPassage = Zone.polygon("timed-gate-passage", immutablePoints(
                 new Vec2(440.0, 320.0),
@@ -114,20 +122,26 @@ public final class Level05 {
         Zone safeZone = Zone.circle("safe-01", 500.0, 240.0, SAFE_ZONE_RADIUS);
 
         RouteNode startNode = new RouteNode("n0", new Vec2(500.0, 150.0));
+        RouteNode phaseShardNode = new RouteNode("n5", new Vec2(530.0, 250.0));
         RouteNode junction = new RouteNode("n1", new Vec2(500.0, 500.0));
         RouteNode keyNode = new RouteNode("n2", new Vec2(250.0, 500.0));
         RouteNode optionalNode = new RouteNode("n3", new Vec2(750.0, 500.0));
+        RouteNode stabilizerNode = new RouteNode("n6", new Vec2(500.0, 600.0));
         RouteNode goalNode = new RouteNode("n4", new Vec2(500.0, 820.0));
 
         RouteGraph graph = new RouteGraph(
-                immutableList(startNode, junction, keyNode, optionalNode, goalNode),
+                immutableList(startNode, phaseShardNode, junction, keyNode,
+                        optionalNode, stabilizerNode, goalNode),
                 immutableList(
                         new RouteEdge("n0", "n1", ARM_WIDTH),
+                        new RouteEdge("n0", "n5", 50.0),
+                        new RouteEdge("n5", "n1", 50.0),
                         new RouteEdge("n1", "n2", ARM_WIDTH),
                         new RouteEdge("n2", "n1", ARM_WIDTH),
                         new RouteEdge("n1", "n3", ARM_WIDTH),
                         new RouteEdge("n3", "n1", ARM_WIDTH),
-                        new RouteEdge("n1", "n4", ARM_WIDTH)
+                        new RouteEdge("n1", "n6", ARM_WIDTH),
+                        new RouteEdge("n6", "n4", ARM_WIDTH)
                 ));
 
         return new LevelDefinition.Builder()
@@ -142,7 +156,7 @@ public final class Level05 {
                 .playerRadius(PLAYER_RADIUS)
                 .safetyMargin(SAFETY_MARGIN)
                 .routeGraph(graph)
-                .objectives(immutableList(key, optional))
+                .objectives(immutableList(key, stabilizer, optional, phaseShard))
                 .gates(immutableList(timedGate, exitGate))
                 .safeZones(Collections.singletonList(safeZone))
                 .parTimeMs(PAR_TIME_MS)
