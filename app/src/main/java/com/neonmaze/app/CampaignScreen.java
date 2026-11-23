@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import com.neonmaze.core.LevelSystem.Catalog;
 import com.neonmaze.core.LevelSystem.DifficultyProfile;
 import com.neonmaze.core.LevelSystem.LevelDefinition;
+import com.neonmaze.core.LevelSystem.Objective;
+import com.neonmaze.core.LevelSystem.ObjectiveType;
 
 import java.util.Map;
 
@@ -167,8 +169,17 @@ public final class CampaignScreen {
         DifficultyProfile metrics = level.difficultyProfile();
         ui.addText(card, activity.getString(R.string.campaign_mandatory) + "  "
                         + metrics.mandatoryObjectiveCount(), 13, UiKit.TEXT_PRIMARY, false, 0, 0);
-        ui.addText(card, activity.getString(R.string.campaign_optional) + "  "
-                        + metrics.optionalObjectiveCount(), 13, UiKit.TEXT_PRIMARY, false, 4, 0);
+        for (Objective objective : level.objectives()) {
+            String name = localizedObjectiveText(objective.displayNameKey(), objective.id());
+            String description = localizedObjectiveText(objective.descriptionKey(), "");
+            boolean mandatory = objective.type() == ObjectiveType.MANDATORY;
+            ui.addText(card, activity.getString(mandatory
+                            ? R.string.campaign_mission_mandatory_item
+                            : R.string.campaign_mission_optional_item, name, description),
+                    12, mandatory ? UiKit.AMBER : UiKit.VIOLET, false, 5, 0);
+        }
+        ui.addText(card, activity.getString(R.string.campaign_exit_instruction),
+                11, UiKit.MINT, true, 8, 0);
         ui.addText(card, activity.getString(R.string.campaign_turns_branches,
                         metrics.turnCount(), metrics.branchCount()),
                 12, UiKit.TEXT_SECONDARY, false, 8, 0);
@@ -197,6 +208,13 @@ public final class CampaignScreen {
                 UiKit.ButtonStyle.PRIMARY, unlocked && !progressLoading && !progressFailed
                         ? () -> actions.onStartCampaignLevel(level) : null), true);
         ui.addCard(page, card, 20);
+    }
+
+    private String localizedObjectiveText(String key, String fallback) {
+        if (key == null || key.isEmpty()) return fallback;
+        int resourceId = activity.getResources().getIdentifier(
+                key, "string", activity.getPackageName());
+        return resourceId == 0 ? fallback : activity.getString(resourceId);
     }
 
     private LevelDefinition selectedLevel() {
