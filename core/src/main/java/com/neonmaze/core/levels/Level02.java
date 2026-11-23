@@ -72,7 +72,7 @@ public final class Level02 {
         RouteNode leftMid = new RouteNode("left-mid", new Vec2(190.0, 500.0));
         RouteNode leftExit = new RouteNode("left-exit", new Vec2(190.0, 800.0));
 
-        RouteNode rightEntry = new RouteNode("right-entry", new Vec2(870.0, 200.0));
+        RouteNode rightEntry = new RouteNode("right-entry", new Vec2(870.0, 260.0));
         RouteNode rightMid = new RouteNode("right-mid", new Vec2(870.0, 500.0));
         RouteNode optionalNode = new RouteNode("optional-node", new Vec2(840.0, 500.0));
         RouteNode rightExit = new RouteNode("right-exit", new Vec2(870.0, 800.0));
