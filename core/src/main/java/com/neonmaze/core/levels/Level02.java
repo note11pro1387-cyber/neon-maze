@@ -59,7 +59,7 @@ public final class Level02 {
 
         Zone start = Zone.circle("start", 500.0, 200.0, 40.0);
         Zone goal = Zone.circle("goal", 500.0, 800.0, 40.0);
-        Zone beaconZone = Zone.circle("route-beacon-zone", 500.0, 260.0, 12.0);
+        Zone beaconZone = Zone.circle("route-beacon-zone", 350.0, 200.0, 12.0);
         Objective beacon = Objective.mandatory("route-beacon", beaconZone,
                 "objective_route_beacon_name", "objective_route_beacon_desc");
         Zone optionalZone = Zone.circle("optional-01-zone", 840.0, 500.0, 14.0);
@@ -67,7 +67,7 @@ public final class Level02 {
                 "objective_precision_shard_name", "objective_precision_shard_desc");
 
         RouteNode startNode = new RouteNode("start", new Vec2(500.0, 200.0));
-        RouteNode beaconNode = new RouteNode("route-beacon", new Vec2(500.0, 260.0));
+        RouteNode beaconNode = new RouteNode("route-beacon", new Vec2(350.0, 200.0));
         RouteNode leftEntry = new RouteNode("left-entry", new Vec2(190.0, 200.0));
         RouteNode leftMid = new RouteNode("left-mid", new Vec2(190.0, 500.0));
         RouteNode leftExit = new RouteNode("left-exit", new Vec2(190.0, 800.0));
@@ -83,8 +83,8 @@ public final class Level02 {
                         rightEntry, rightMid, optionalNode, rightExit, goalNode),
                 immutableList(
                         new RouteEdge("start", "route-beacon", 200.0),
-                        new RouteEdge("route-beacon", "left-entry", 140.0),
-                        new RouteEdge("route-beacon", "right-entry", 140.0),
+                        new RouteEdge("route-beacon", "left-entry", 200.0),
+                        new RouteEdge("route-beacon", "right-entry", 200.0),
                         new RouteEdge("left-entry", "left-mid", 220.0),
                         new RouteEdge("left-mid", "left-exit", 220.0),
                         new RouteEdge("left-exit", "goal-node", 200.0),
