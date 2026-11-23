@@ -275,8 +275,8 @@ public final class LevelSystem {
         private final Zone zone;
         private final String grantsKeyId;
         private final String requiredKeyId;
-        @Nullable private final String displayNameKey;
-        @Nullable private final String descriptionKey;
+        private final String displayNameKey;
+        private final String descriptionKey;
 
         private Objective(String id, ObjectiveType type, Zone zone,
                           String grantsKeyId, String requiredKeyId,
@@ -321,8 +321,8 @@ public final class LevelSystem {
         public Zone zone() { return zone; }
         public String grantsKeyId() { return grantsKeyId; }
         public String requiredKeyId() { return requiredKeyId; }
-        @Nullable public String displayNameKey() { return displayNameKey; }
-        @Nullable public String descriptionKey() { return descriptionKey; }
+        public String displayNameKey() { return displayNameKey; }
+        public String descriptionKey() { return descriptionKey; }
     }
 
     // ---------------------------------------------------------------------
