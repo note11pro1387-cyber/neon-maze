@@ -20,17 +20,17 @@ import java.util.List;
  * <p>Final authored Campaign level. It combines only mechanics already
  * introduced earlier: a precision-width plus corridor, a timed barrier in
  * the approach, a Safe Zone before that timed barrier, a mandatory key in
- * the left branch, a key-locked exit barrier, and an optional collectible
- * in the right branch. No moving hazard, random rule, or new mechanic is
- * introduced here.</p>
+ * the left branch, a mandatory stabilizer beyond the timed gate, a key-locked
+ * exit barrier, and optional rewards in the right branch and pre-gate spur.
+ * No moving hazard, random rule, or new mechanic is introduced here.</p>
  *
  * <p>All four arms are 120 world units wide. With player radius 15 and
  * safety margin 5, the effective radius is 20 and the legal centre band
- * is 80 units wide. Objective circles use radius 30, leaving 10 units of
- * geometric margin after accounting for the effective player radius. The
- * Safe Zone radius is 32; its combined radius and player clearance is 52,
- * leaving 8 units in the arm. It is a planning landmark only and never
- * pauses the Simulation Clock.</p>
+ * is 80 units wide. The key and right-branch shard use 30-unit triggers;
+ * the mandatory stabilizer and pre-gate shard use tighter 18- and 10-unit
+ * triggers to reward precise tracing. The Safe Zone radius is 32; its
+ * combined radius and player clearance is 52, leaving 8 units in the arm.
+ * It is a planning landmark only and never pauses the Simulation Clock.</p>
  *
  * <p>The timed barrier spans the full lower arm at y=360. Its passage is
  * x=440..560 and y=320..400. The upper exit barrier spans the full upper
