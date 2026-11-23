@@ -275,30 +275,54 @@ public final class LevelSystem {
         private final Zone zone;
         private final String grantsKeyId;
         private final String requiredKeyId;
+        @Nullable private final String displayNameKey;
+        @Nullable private final String descriptionKey;
 
         private Objective(String id, ObjectiveType type, Zone zone,
-                          String grantsKeyId, String requiredKeyId) {
+                          String grantsKeyId, String requiredKeyId,
+                          String displayNameKey, String descriptionKey) {
             this.id = requireText(id, "objective id");
             this.type = Objects.requireNonNull(type, "objective type");
             this.zone = Objects.requireNonNull(zone, "objective zone");
             this.grantsKeyId = emptyToNull(grantsKeyId);
             this.requiredKeyId = emptyToNull(requiredKeyId);
+            this.displayNameKey = emptyToNull(displayNameKey);
+            this.descriptionKey = emptyToNull(descriptionKey);
         }
 
         public static Objective mandatory(String id, Zone zone) {
-            return new Objective(id, ObjectiveType.MANDATORY, zone, null, null);
+            return mandatory(id, zone, null, null);
+        }
+        public static Objective mandatory(String id, Zone zone,
+                                          String displayNameKey, String descriptionKey) {
+            return new Objective(id, ObjectiveType.MANDATORY, zone,
+                    null, null, displayNameKey, descriptionKey);
         }
         public static Objective optional(String id, Zone zone) {
-            return new Objective(id, ObjectiveType.OPTIONAL, zone, null, null);
+            return optional(id, zone, null, null);
         }
-        public static Objective keyGrant(String id, Zone zone, String grantsKeyId, String requiredKeyId) {
-            return new Objective(id, ObjectiveType.MANDATORY, zone, grantsKeyId, requiredKeyId);
+        public static Objective optional(String id, Zone zone,
+                                         String displayNameKey, String descriptionKey) {
+            return new Objective(id, ObjectiveType.OPTIONAL, zone,
+                    null, null, displayNameKey, descriptionKey);
+        }
+        public static Objective keyGrant(String id, Zone zone,
+                                          String grantsKeyId, String requiredKeyId) {
+            return keyGrant(id, zone, grantsKeyId, requiredKeyId, null, null);
+        }
+        public static Objective keyGrant(String id, Zone zone,
+                                          String grantsKeyId, String requiredKeyId,
+                                          String displayNameKey, String descriptionKey) {
+            return new Objective(id, ObjectiveType.MANDATORY, zone,
+                    grantsKeyId, requiredKeyId, displayNameKey, descriptionKey);
         }
         public String id() { return id; }
         public ObjectiveType type() { return type; }
         public Zone zone() { return zone; }
         public String grantsKeyId() { return grantsKeyId; }
         public String requiredKeyId() { return requiredKeyId; }
+        @Nullable public String displayNameKey() { return displayNameKey; }
+        @Nullable public String descriptionKey() { return descriptionKey; }
     }
 
     // ---------------------------------------------------------------------
