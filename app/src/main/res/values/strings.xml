@@ -54,11 +54,11 @@
     <string name="level_03_name">Pulse Reactor</string>
     <string name="level_04_name">Energy Vault</string>
     <string name="level_05_name">The Core</string>
-    <string name="level_01_desc">Learn the trace: touch Start, hold, turn and reach Goal.</string>
-    <string name="level_02_desc">Choose your line and control the narrower passage.</string>
-    <string name="level_03_desc">Read the signal and cross the timed gate.</string>
-    <string name="level_04_desc">Find the key, backtrack and unlock the exit.</string>
-    <string name="level_05_desc">Combine precision, keys and timing in the final route.</string>
+    <string name="level_01_desc">Activate the Signal Core on the main route; explore the side spur for the Echo Shard.</string>
+    <string name="level_02_desc">Activate the Route Beacon first, then choose the safer left lane or the precise right passage.</string>
+    <string name="level_03_desc">Collect the Reactor Cell, time your crossing and activate the stabilizer beyond the gate.</string>
+    <string name="level_04_desc">Recover the left-branch key, return to the junction and unlock the exit while searching for vault rewards.</string>
+    <string name="level_05_desc">Recover the Core Key, activate the stabilizer, cross the pulse gate and search the side routes for rewards.</string>
     <string name="modes_title">Choose your protocol</string>
     <string name="modes_subtitle">Each mode follows its own pause and record rules.</string>
     <string name="mode_campaign">Campaign</string>
