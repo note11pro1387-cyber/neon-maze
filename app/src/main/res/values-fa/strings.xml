@@ -54,11 +54,11 @@
     <string name="level_03_name">راکتور تپشی</string>
     <string name="level_04_name">خزانهٔ انرژی</string>
     <string name="level_05_name">هسته</string>
-    <string name="level_01_desc">مسیر را یاد بگیر: شروع را لمس کن، نگه دار، بچرخ و به هدف برس.</string>
-    <string name="level_02_desc">مسیرت را انتخاب کن و گذرگاه باریک‌تر را با دقت طی کن.</string>
-    <string name="level_03_desc">علامت را بخوان و از دروازهٔ زمان‌دار عبور کن.</string>
-    <string name="level_04_desc">کلید را پیدا کن، بازگرد و خروجی را باز کن.</string>
-    <string name="level_05_desc">دقت، کلیدها و زمان‌بندی را در مسیر نهایی ترکیب کن.</string>
+    <string name="level_01_desc">هستهٔ سیگنال را در مسیر اصلی فعال کن؛ برای تکهٔ پژواک از شاخهٔ کناری هم دیدن کن.</string>
+    <string name="level_02_desc">ابتدا فانوس مسیر را فعال کن؛ سپس میان مسیر امن چپ و گذرگاه دقیق راست انتخاب کن.</string>
+    <string name="level_03_desc">سلول راکتور را بردار، در زمان مناسب از دروازه بگذر و تثبیت‌کننده را فعال کن.</string>
+    <string name="level_04_desc">کلید را از شاخهٔ چپ بگیر، به تقاطع برگرد و پس از بازکردن قفل خروج را پیدا کن.</string>
+    <string name="level_05_desc">کلید هسته و تثبیت‌کننده را پیدا کن؛ از دروازهٔ تپشی بگذر و برای پاداش، شاخه‌ها را جست‌وجو کن.</string>
     <string name="modes_title">حالت بازی را انتخاب کن</string>
     <string name="modes_subtitle">هر حالت قوانین مکث و ثبت رکورد خودش را دارد.</string>
     <string name="mode_campaign">کمپین</string>
