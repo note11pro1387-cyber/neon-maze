@@ -317,4 +317,56 @@
     <string name="startup_continue_offline">ادامه با منابع محلی</string>
     <string name="startup_local_privacy">پروفایل و پیشرفت بازیکن روی همین دستگاه می‌مانند.</string>
 
+
+    <!-- Mission and objective content -->
+    <string name="gameplay_objective_primary">هدف فعلی: %1$s (%2$d از %3$d)</string>
+    <string name="gameplay_objective_blocked_named">خروج بسته است؛ ابتدا «%1$s» را پیدا کن.</string>
+    <string name="gameplay_objective_primary_done">اهداف اصلی تکمیل شد؛ به خروج برس.</string>
+    <string name="gameplay_no_objectives">نشانگر شروع را لمس کن و درون کریدور روشن تا خروج حرکت کن.</string>
+    <string name="campaign_mission_mandatory_item">◆ %1$s — %2$s</string>
+    <string name="campaign_mission_optional_item">◇ %1$s — %2$s</string>
+    <string name="campaign_exit_instruction">برای ثبت پیروزی، یک انگشت را تا رسیدن به نشانگر خروج روی صفحه نگه دار.</string>
+    <string name="mode_selected_mission_heading">مأموریت مسیر انتخاب‌شده</string>
+    <string name="mode_daily_mission_heading">مأموریت چالش امروز</string>
+    <string name="mode_mission_counts">%1$d هدف اجباری · %2$d هدف اختیاری</string>
+    <string name="mode_daily_identity">تاریخ UTC: %1$s · شناسه: %2$s</string>
+
+    <!-- Level 01: Awakening -->
+    <string name="objective_signal_core_name">هستهٔ سیگنال</string>
+    <string name="objective_signal_core_desc">نشانگر کهربایی را در مسیر عمودی جمع‌آوری کن.</string>
+    <string name="objective_echo_shard_name">تکهٔ پژواک</string>
+    <string name="objective_echo_shard_desc">برای پاداش اختیاری از شاخهٔ پایین مسیر عبور کن.</string>
+
+    <!-- Level 02: Precision Core -->
+    <string name="objective_route_beacon_name">فانوس مسیر</string>
+    <string name="objective_route_beacon_desc">پیش از انتخاب مسیر چپ یا راست، beacon بالایی را فعال کن.</string>
+    <string name="objective_precision_shard_name">تکهٔ دقت</string>
+    <string name="objective_precision_shard_desc">برای پاداش، از خط باریک سمت راست کمی فاصله بگیر.</string>
+
+    <!-- Level 03: Pulse Reactor -->
+    <string name="objective_reactor_cell_name">سلول راکتور</string>
+    <string name="objective_reactor_cell_desc">سلول پیش از دروازهٔ تپشی را جمع‌آوری کن.</string>
+    <string name="objective_stabilizer_name">تثبیت‌کننده</string>
+    <string name="objective_stabilizer_desc">پس از عبور از دروازه، تثبیت‌کنندهٔ راکتور را فعال کن.</string>
+    <string name="objective_afterglow_shard_name">تکهٔ پس‌تاب</string>
+    <string name="objective_afterglow_shard_desc">برای پاداش اختیاری از انحراف بالای مسیر عبور کن.</string>
+
+    <!-- Level 04: Energy Vault -->
+    <string name="objective_vault_key_name">کلید خزانه</string>
+    <string name="objective_vault_key_desc">وارد شاخهٔ چپ شو، کلید را بردار و به تقاطع مرکزی برگرد.</string>
+    <string name="objective_vault_shard_name">تکهٔ خزانه</string>
+    <string name="objective_vault_shard_desc">شاخهٔ راست را برای پاداش اختیاری جست‌وجو کن.</string>
+    <string name="objective_exit_echo_name">پژواک خروج</string>
+    <string name="objective_exit_echo_desc">پس از بازکردن دروازه، انحراف کوچک نزدیک خروج را پیدا کن.</string>
+
+    <!-- Level 05: The Core -->
+    <string name="objective_core_key_name">کلید هسته</string>
+    <string name="objective_core_key_desc">کلید را در شاخهٔ چپ پیدا کن تا قفل خروج باز شود.</string>
+    <string name="objective_core_stabilizer_name">تثبیت‌کنندهٔ هسته</string>
+    <string name="objective_core_stabilizer_desc">پس از عبور از دروازهٔ زمان‌دار، تثبیت‌کننده را فعال کن.</string>
+    <string name="objective_core_shard_name">تکهٔ هسته</string>
+    <string name="objective_core_shard_desc">شاخهٔ راست را برای تکهٔ اختیاری هسته جست‌وجو کن.</string>
+    <string name="objective_phase_shard_name">تکهٔ فاز</string>
+    <string name="objective_phase_shard_desc">پیش از دروازهٔ زمان‌دار، انحراف بالایی را برای پاداش اختیاری طی کن.</string>
+
 </resources>
