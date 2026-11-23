@@ -4,6 +4,7 @@ import com.neonmaze.core.GeometryCollision.Aabb;
 import com.neonmaze.core.GeometryCollision.Vec2;
 import com.neonmaze.core.LevelSystem.Gate;
 import com.neonmaze.core.LevelSystem.LevelDefinition;
+import com.neonmaze.core.LevelSystem.Objective;
 import com.neonmaze.core.LevelSystem.RouteEdge;
 import com.neonmaze.core.LevelSystem.RouteGraph;
 import com.neonmaze.core.LevelSystem.RouteNode;
@@ -33,7 +34,7 @@ import java.util.List;
  */
 public final class Level03 {
     public static final String LEVEL_ID = "level-03-pulse-reactor";
-    public static final int LEVEL_REVISION = 1;
+    public static final int LEVEL_REVISION = 2;
     public static final String DISPLAY_NAME_KEY = "level_03_name";
 
     private static final double PLAYER_RADIUS = 15.0;
@@ -62,6 +63,15 @@ public final class Level03 {
         Zone start = Zone.circle("start", 160.0, 510.0, 35.0);
         Zone goal = Zone.circle("goal", 1040.0, 510.0, 35.0);
         Zone safeZone = Zone.circle("safe-01", 500.0, 510.0, 60.0);
+        Objective reactorCell = Objective.mandatory("reactor-cell",
+                Zone.circle("reactor-cell-zone", 420.0, 510.0, 22.0),
+                "objective_reactor_cell_name", "objective_reactor_cell_desc");
+        Objective stabilizer = Objective.mandatory("stabilizer",
+                Zone.circle("stabilizer-zone", 900.0, 510.0, 22.0),
+                "objective_stabilizer_name", "objective_stabilizer_desc");
+        Objective afterglow = Objective.optional("optional-01",
+                Zone.circle("afterglow-zone", 900.0, 580.0, 14.0),
+                "objective_afterglow_shard_name", "objective_afterglow_shard_desc");
         Zone gatePassage = Zone.polygon("timed-gate-passage", immutablePoints(
                 new Vec2(680.0, 320.0),
                 new Vec2(720.0, 320.0),
@@ -76,15 +86,21 @@ public final class Level03 {
         RouteNode safeNode = new RouteNode("n2", new Vec2(500.0, 510.0));
         RouteNode approachNode = new RouteNode("n3", new Vec2(650.0, 510.0));
         RouteNode afterGateNode = new RouteNode("n4", new Vec2(750.0, 510.0));
-        RouteNode goalApproach = new RouteNode("n5", new Vec2(1040.0, 510.0));
+        RouteNode stabilizerNode = new RouteNode("n5", new Vec2(900.0, 510.0));
+        RouteNode afterglowNode = new RouteNode("n6", new Vec2(900.0, 580.0));
+        RouteNode goalApproach = new RouteNode("n7", new Vec2(1040.0, 510.0));
         RouteGraph graph = new RouteGraph(
-                immutableList(startNode, laneNode, safeNode, approachNode, afterGateNode, goalApproach),
+                immutableList(startNode, laneNode, safeNode, approachNode, afterGateNode,
+                        stabilizerNode, afterglowNode, goalApproach),
                 immutableList(
                         new RouteEdge("n0", "n1", 380.0),
                         new RouteEdge("n1", "n2", 380.0),
                         new RouteEdge("n2", "n3", 380.0),
                         new RouteEdge("n3", "n4", 380.0),
-                        new RouteEdge("n4", "n5", 380.0)));
+                        new RouteEdge("n4", "n5", 380.0),
+                        new RouteEdge("n5", "n6", 160.0),
+                        new RouteEdge("n6", "n7", 160.0),
+                        new RouteEdge("n5", "n7", 380.0)));
 
         return new LevelDefinition.Builder()
                 .levelId(LEVEL_ID)
@@ -98,7 +114,7 @@ public final class Level03 {
                 .playerRadius(PLAYER_RADIUS)
                 .safetyMargin(SAFETY_MARGIN)
                 .routeGraph(graph)
-                .objectives(Collections.emptyList())
+                .objectives(immutableList(reactorCell, stabilizer, afterglow))
                 .gates(Collections.singletonList(timedGate))
                 .safeZones(Collections.singletonList(safeZone))
                 .parTimeMs(PAR_TIME_MS)
