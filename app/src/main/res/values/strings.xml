@@ -327,7 +327,7 @@
     <string name="campaign_mission_optional_item">◇ %1$s — %2$s</string>
     <string name="campaign_exit_instruction">Keep one finger on the screen until you reach the Exit marker to complete the run.</string>
     <string name="mode_selected_mission_heading">Selected route mission</string>
-    <string name="mode_daily_mission_heading">Today's challenge mission</string>
+    <string name="mode_daily_mission_heading">Daily challenge mission</string>
     <string name="mode_mission_counts">%1$d mandatory objectives · %2$d optional objectives</string>
     <string name="mode_daily_identity">UTC date: %1$s · ID: %2$s</string>
 
