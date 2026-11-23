@@ -64,6 +64,10 @@ public final class GameRenderer {
     private final Paint objectiveMandatoryPaint = paint(Paint.Style.STROKE, COLOR_AMBER, 245);
     private final Paint objectiveOptionalPaint = paint(Paint.Style.STROKE, COLOR_VIOLET, 245);
     private final Paint objectiveCollectedPaint = paint(Paint.Style.FILL, COLOR_MINT, 225);
+    private final Paint objectiveHaloPaint = paint(Paint.Style.FILL, COLOR_BOARD, 245);
+    private final Paint objectiveGlyphMandatoryPaint = paint(Paint.Style.FILL, COLOR_AMBER, 255);
+    private final Paint objectiveGlyphOptionalPaint = paint(Paint.Style.FILL, COLOR_VIOLET, 255);
+    private final Paint objectiveCheckPaint = paint(Paint.Style.STROKE, COLOR_WHITE, 255);
     private final Paint startPaint = paint(Paint.Style.FILL, COLOR_MINT, 82);
     private final Paint goalPaint = paint(Paint.Style.FILL, COLOR_AMBER, 96);
     private final Paint trailGlowPaint = paint(Paint.Style.STROKE, COLOR_MINT, 70);
@@ -78,6 +82,7 @@ public final class GameRenderer {
 
     private final Path boundaryPath = new Path();
     private final Path trailPath = new Path();
+    private final Path objectiveGlyphPath = new Path();
     private final double[] ghostPosition = new double[2];
 
     @Nullable private LevelDefinition level;
@@ -118,6 +123,9 @@ public final class GameRenderer {
         gateBarrierPaint.setStrokeCap(Paint.Cap.SQUARE);
         objectiveMandatoryPaint.setStrokeWidth(2.5f);
         objectiveOptionalPaint.setStrokeWidth(2.5f);
+        objectiveCheckPaint.setStrokeWidth(2.2f);
+        objectiveCheckPaint.setStrokeCap(Paint.Cap.ROUND);
+        objectiveCheckPaint.setStrokeJoin(Paint.Join.ROUND);
         touchHaloPaint.setStrokeWidth(1.5f);
         blockedGoalPaint.setStrokeWidth(2.5f);
     }
@@ -300,14 +308,47 @@ public final class GameRenderer {
         for (int i = 0; i < objectives.size(); i++) {
             Objective objective = objectives.get(i);
             boolean collected = engine.isObjectiveCollected(objective.id());
-            Paint paint;
-            if (collected) {
-                paint = objectiveCollectedPaint;
-            } else {
-                paint = objective.type() == ObjectiveType.OPTIONAL
-                        ? objectiveOptionalPaint : objectiveMandatoryPaint;
-            }
-            objectiveGeometry[i].draw(canvas, paint);
+            Paint ringPaint = collected ? objectiveCollectedPaint
+                    : objective.type() == ObjectiveType.OPTIONAL
+                    ? objectiveOptionalPaint : objectiveMandatoryPaint;
+            ZoneGeometry geometry = objectiveGeometry[i];
+            geometry.draw(canvas, ringPaint);
+            drawObjectiveGlyph(canvas, geometry.zone.centroid(), objective, collected);
+        }
+    }
+
+    /**
+     * Adds a high-contrast, shape-coded objective marker at the trigger centre.
+     * Mandatory objectives use a diamond, optional objectives use a dot, and
+     * collected objectives use a check. All drawing state is reused per frame.
+     */
+    private void drawObjectiveGlyph(Canvas canvas, Vec2 worldCenter,
+                                    Objective objective, boolean collected) {
+        float x = viewport.worldToScreenX(worldCenter.x());
+        float y = viewport.worldToScreenY(worldCenter.y());
+        float radius = Math.max(3.5f, (float) (viewport.scale() * 7.0));
+        canvas.drawCircle(x, y, radius * 1.8f, objectiveHaloPaint);
+
+        if (collected) {
+            canvas.drawCircle(x, y, radius * 1.25f, objectiveCollectedPaint);
+            objectiveGlyphPath.reset();
+            objectiveGlyphPath.moveTo(x - radius * 0.52f, y);
+            objectiveGlyphPath.lineTo(x - radius * 0.12f, y + radius * 0.38f);
+            objectiveGlyphPath.lineTo(x + radius * 0.58f, y - radius * 0.42f);
+            canvas.drawPath(objectiveGlyphPath, objectiveCheckPaint);
+            return;
+        }
+
+        if (objective.type() == ObjectiveType.MANDATORY) {
+            objectiveGlyphPath.reset();
+            objectiveGlyphPath.moveTo(x, y - radius);
+            objectiveGlyphPath.lineTo(x + radius, y);
+            objectiveGlyphPath.lineTo(x, y + radius);
+            objectiveGlyphPath.lineTo(x - radius, y);
+            objectiveGlyphPath.close();
+            canvas.drawPath(objectiveGlyphPath, objectiveGlyphMandatoryPaint);
+        } else {
+            canvas.drawCircle(x, y, radius * 0.78f, objectiveGlyphOptionalPaint);
         }
     }
 
