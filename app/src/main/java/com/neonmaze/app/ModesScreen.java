@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import com.neonmaze.core.DailyChallenge;
 import com.neonmaze.core.LevelSystem.Catalog;
 import com.neonmaze.core.LevelSystem.LevelDefinition;
+import com.neonmaze.core.LevelSystem.Objective;
+import com.neonmaze.core.LevelSystem.ObjectiveType;
 import com.neonmaze.core.ReplaySystem.ReplayMode;
 
 import java.util.Map;
@@ -101,6 +103,18 @@ public final class ModesScreen {
         }
         ui.addCard(page, levels, 0);
 
+        if (selected != null) {
+            addMissionBriefing(page, selected, R.string.mode_selected_mission_heading);
+        }
+        if (daily != null && !dailyLoading && !dailyFailed) {
+            addMissionBriefing(page, daily.level(), R.string.mode_daily_mission_heading);
+            LinearLayout dailyIdentity = ui.card();
+            ui.addText(dailyIdentity, activity.getString(R.string.mode_daily_identity,
+                            daily.utcDate(), daily.challengeId()),
+                    11, UiKit.MINT, true, 0, 0);
+            ui.addCard(page, dailyIdentity, 0);
+        }
+
         addModeCard(page, R.string.mode_practice, R.string.mode_practice_desc,
                 R.string.mode_pause_allowed, UiKit.VIOLET, UiKit.Icon.PLAY,
                 selected == null || progressLoading || progressFailed ? null
@@ -162,6 +176,41 @@ public final class ModesScreen {
                 action == null ? UiKit.ButtonStyle.QUIET : UiKit.ButtonStyle.SECONDARY,
                 action), true);
         ui.addCard(page, card, 10);
+    }
+
+    private void addMissionBriefing(LinearLayout page, LevelDefinition level, int headingId) {
+        LinearLayout card = ui.card();
+        ui.addSection(card, activity.getString(headingId), null);
+        int mandatoryCount = 0;
+        int optionalCount = 0;
+        for (Objective objective : level.objectives()) {
+            boolean mandatory = objective.type() == ObjectiveType.MANDATORY;
+            if (mandatory) mandatoryCount++; else optionalCount++;
+            String name = localizedObjectiveText(objective.displayNameKey(), objective.id());
+            String description = localizedObjectiveText(objective.descriptionKey(), "");
+            ui.addText(card, activity.getString(mandatory
+                            ? R.string.campaign_mission_mandatory_item
+                            : R.string.campaign_mission_optional_item, name, description),
+                    12, mandatory ? UiKit.AMBER : UiKit.VIOLET, false, 5, 0);
+        }
+        if (level.objectives().isEmpty()) {
+            ui.addText(card, activity.getString(R.string.gameplay_no_objectives),
+                    12, UiKit.TEXT_SECONDARY, false, 4, 0);
+        }
+        ui.addDivider(card, 8, 8);
+        ui.addText(card, activity.getString(R.string.mode_mission_counts,
+                        mandatoryCount, optionalCount),
+                11, UiKit.MINT, true, 0, 0);
+        ui.addText(card, activity.getString(R.string.campaign_exit_instruction),
+                11, UiKit.TEXT_SECONDARY, false, 5, 0);
+        ui.addCard(page, card, 8);
+    }
+
+    private String localizedObjectiveText(String key, String fallback) {
+        if (key == null || key.isEmpty()) return fallback;
+        int resourceId = activity.getResources().getIdentifier(
+                key, "string", activity.getPackageName());
+        return resourceId == 0 ? fallback : activity.getString(resourceId);
     }
 
     private LevelDefinition selectedLevel() {
