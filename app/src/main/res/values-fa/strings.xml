@@ -335,7 +335,7 @@
     <string name="objective_signal_core_name">هستهٔ سیگنال</string>
     <string name="objective_signal_core_desc">نشانگر کهربایی را در مسیر عمودی جمع‌آوری کن.</string>
     <string name="objective_echo_shard_name">تکهٔ پژواک</string>
-    <string name="objective_echo_shard_desc">برای پاداش اختیاری از شاخهٔ پایین مسیر عبور کن.</string>
+    <string name="objective_echo_shard_desc">برای پاداش اختیاری از مسیر اصلی کمی به سمت راست منحرف شو.</string>
 
     <!-- Level 02: Precision Core -->
     <string name="objective_route_beacon_name">فانوس مسیر</string>
