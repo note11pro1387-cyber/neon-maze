@@ -8,7 +8,7 @@
     <string name="gameplay_objectives_optional">Optional objectives %1$d of %2$d</string>
     <string name="gameplay_objectives_combined">%1$s · %2$s</string>
     <string name="gameplay_objective_blocked">Required objective missing</string>
-    <string name="gameplay_no_objectives">No objectives</string>
+    <string name="gameplay_no_objectives">Touch Start and trace the glowing corridor to the exit.</string>
     <string name="gameplay_gate_open">Gate open</string>
     <string name="gameplay_gate_warning">Gate closing soon</string>
     <string name="gameplay_gate_closed">Gate closed</string>
@@ -322,7 +322,7 @@
     <string name="gameplay_objective_primary">Next objective: %1$s (%2$d of %3$d)</string>
     <string name="gameplay_objective_blocked_named">Exit blocked — find %1$s first.</string>
     <string name="gameplay_objective_primary_done">Main objectives complete — reach the exit.</string>
-    <string name="gameplay_no_objectives">Touch Start and trace the glowing corridor to the exit.</string>
+    
     <string name="campaign_mission_mandatory_item">◆ %1$s — %2$s</string>
     <string name="campaign_mission_optional_item">◇ %1$s — %2$s</string>
     <string name="campaign_exit_instruction">Keep one finger on the screen until you reach the Exit marker to complete the run.</string>
