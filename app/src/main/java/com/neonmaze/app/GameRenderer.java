@@ -313,7 +313,7 @@ public final class GameRenderer {
                     ? objectiveOptionalPaint : objectiveMandatoryPaint;
             ZoneGeometry geometry = objectiveGeometry[i];
             geometry.draw(canvas, ringPaint);
-            drawObjectiveGlyph(canvas, geometry.zone.centroid(), objective, collected);
+            drawObjectiveGlyph(canvas, geometry.centerX, geometry.centerY, objective, collected);
         }
     }
 
@@ -322,10 +322,10 @@ public final class GameRenderer {
      * Mandatory objectives use a diamond, optional objectives use a dot, and
      * collected objectives use a check. All drawing state is reused per frame.
      */
-    private void drawObjectiveGlyph(Canvas canvas, Vec2 worldCenter,
+    private void drawObjectiveGlyph(Canvas canvas, double worldCenterX, double worldCenterY,
                                     Objective objective, boolean collected) {
-        float x = viewport.worldToScreenX(worldCenter.x());
-        float y = viewport.worldToScreenY(worldCenter.y());
+        float x = viewport.worldToScreenX(worldCenterX);
+        float y = viewport.worldToScreenY(worldCenterY);
         float radius = Math.max(3.5f, (float) (viewport.scale() * 7.0));
         canvas.drawCircle(x, y, radius * 1.8f, objectiveHaloPaint);
 
@@ -457,10 +457,15 @@ public final class GameRenderer {
 
     private final class ZoneGeometry {
         private final Zone zone;
+        private final double centerX;
+        private final double centerY;
         private final Path path = new Path();
 
         private ZoneGeometry(Zone zone) {
             this.zone = zone;
+            Vec2 center = zone.centroid();
+            this.centerX = center.x();
+            this.centerY = center.y();
         }
 
         private void rebuild(TouchInputAdapter.Viewport viewport) {
