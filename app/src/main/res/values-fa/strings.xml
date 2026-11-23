@@ -8,7 +8,7 @@
     <string name="gameplay_objectives_optional">اهداف اختیاری %1$d از %2$d</string>
     <string name="gameplay_objectives_combined">%1$s · %2$s</string>
     <string name="gameplay_objective_blocked">هدف اجباری باقی مانده است</string>
-    <string name="gameplay_no_objectives">بدون هدف</string>
+    <string name="gameplay_no_objectives">نشانگر شروع را لمس کن و درون کریدور روشن تا خروج حرکت کن.</string>
     <string name="gameplay_gate_open">دروازه باز است</string>
     <string name="gameplay_gate_warning">دروازه به‌زودی بسته می‌شود</string>
     <string name="gameplay_gate_closed">دروازه بسته است</string>
@@ -322,7 +322,7 @@
     <string name="gameplay_objective_primary">هدف فعلی: %1$s (%2$d از %3$d)</string>
     <string name="gameplay_objective_blocked_named">خروج بسته است؛ ابتدا «%1$s» را پیدا کن.</string>
     <string name="gameplay_objective_primary_done">اهداف اصلی تکمیل شد؛ به خروج برس.</string>
-    <string name="gameplay_no_objectives">نشانگر شروع را لمس کن و درون کریدور روشن تا خروج حرکت کن.</string>
+    
     <string name="campaign_mission_mandatory_item">◆ %1$s — %2$s</string>
     <string name="campaign_mission_optional_item">◇ %1$s — %2$s</string>
     <string name="campaign_exit_instruction">برای ثبت پیروزی، یک انگشت را تا رسیدن به نشانگر خروج روی صفحه نگه دار.</string>
