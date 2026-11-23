@@ -3,6 +3,7 @@ package com.neonmaze.core.levels;
 import com.neonmaze.core.GeometryCollision.Aabb;
 import com.neonmaze.core.GeometryCollision.Vec2;
 import com.neonmaze.core.LevelSystem.LevelDefinition;
+import com.neonmaze.core.LevelSystem.Objective;
 import com.neonmaze.core.LevelSystem.RouteEdge;
 import com.neonmaze.core.LevelSystem.RouteGraph;
 import com.neonmaze.core.LevelSystem.RouteNode;
@@ -26,7 +27,7 @@ import java.util.List;
  */
 public final class Level01 {
     public static final String LEVEL_ID = "level-01-awakening";
-    public static final int LEVEL_REVISION = 1;
+    public static final int LEVEL_REVISION = 2;
     public static final String DISPLAY_NAME_KEY = "level_01_name";
 
     private static final double PLAYER_RADIUS = 15.0;
@@ -51,16 +52,30 @@ public final class Level01 {
         Zone start = Zone.circle("start", 200.0, 150.0, ZONE_RADIUS);
         Zone goal = Zone.circle("goal", 800.0, 150.0, ZONE_RADIUS);
 
+        // Main objective sits on the first vertical leg and must be crossed
+        // before the player can reach the exit.
+        Objective signalCore = Objective.mandatory("signal-core",
+                Zone.circle("signal-core-zone", 200.0, 480.0, 22.0),
+                "objective_signal_core_name", "objective_signal_core_desc");
+        // A short, optional branch turns the otherwise wide lower runway into
+        // a deliberate precision-reward detour without blocking the main route.
+        Objective echoShard = Objective.optional("optional-01",
+                Zone.circle("echo-shard-zone", 500.0, 845.0, 14.0),
+                "objective_echo_shard_name", "objective_echo_shard_desc");
+
         RouteNode startNode = new RouteNode("n0", new Vec2(200.0, 150.0));
         RouteNode lowerTurn = new RouteNode("n1", new Vec2(200.0, 800.0));
         RouteNode upperTurn = new RouteNode("n2", new Vec2(800.0, 800.0));
         RouteNode goalNode = new RouteNode("n3", new Vec2(800.0, 150.0));
+        RouteNode echoShardNode = new RouteNode("n4", new Vec2(500.0, 845.0));
         RouteGraph graph = new RouteGraph(
-                immutableList(startNode, lowerTurn, upperTurn, goalNode),
+                immutableList(startNode, lowerTurn, upperTurn, goalNode, echoShardNode),
                 immutableList(
                         new RouteEdge("n0", "n1", 200.0),
                         new RouteEdge("n1", "n2", 200.0),
-                        new RouteEdge("n2", "n3", 200.0)));
+                        new RouteEdge("n2", "n3", 200.0),
+                        new RouteEdge("n1", "n4", 100.0),
+                        new RouteEdge("n4", "n2", 100.0)));
 
         return new LevelDefinition.Builder()
                 .levelId(LEVEL_ID)
@@ -74,7 +89,7 @@ public final class Level01 {
                 .playerRadius(PLAYER_RADIUS)
                 .safetyMargin(SAFETY_MARGIN)
                 .routeGraph(graph)
-                .objectives(Collections.emptyList())
+                .objectives(immutableList(signalCore, echoShard))
                 .gates(Collections.emptyList())
                 .safeZones(Collections.<Zone>emptyList())
                 .parTimeMs(PAR_TIME_MS)
