@@ -55,10 +55,8 @@ import java.util.List;
  * <h2>Design notes recorded as tests</h2>
  * <ul>
  *   <li>{@link EngineScoringTest#campaignCompletionComputesScoreAndStars}
- *       pins the <em>current</em> behavior that Level01 awards 3 stars
- *       vacuously (no optional objectives exist). This may need a design
- *       review; if the rule is changed to “3 stars requires at least one
- *       optional objective”, this test will need to be updated accordingly.</li>
+ *       verifies that Level01's mandatory Signal Core is collected on the
+ *       main route while missing the Echo Shard leaves the run at two stars.</li>
  *   <li>{@link EngineTimeTest#timeAttackCompletesEvenAtExpirySample}
  *       pins the engine's tie-break: the sample that reaches the goal
  *       wins over the time limit <em>for that sample</em>, because
@@ -221,15 +219,66 @@ public class CoreAcceptanceTest {
             assertTrue(problems.toString(), problems.toString().contains("objective zone is not disk-walkable: near-wall"));
         }
 
-        @Test public void level02OptionalIsARealDetourNotTheMainline() {
-            LevelDefinition level = Level02.build();
+        @Test public void campaignLevelsContainNamedMandatoryAndOptionalMissions() {
+            List<LevelDefinition> levels = List.of(Level01.build(), Level02.build(),
+                    Level03.build(), Level04.build(), Level05.build());
+            int[] expectedMandatory = {1, 1, 2, 1, 2};
+            int[] expectedOptional = {1, 1, 1, 2, 2};
+            for (int i = 0; i < levels.size(); i++) {
+                LevelDefinition level = levels.get(i);
+                int mandatory = 0;
+                int optional = 0;
+                assertFalse("Campaign level must not be empty: " + level.levelId(),
+                        level.objectives().isEmpty());
+                for (Objective objective : level.objectives()) {
+                    if (objective.type() == LevelSystem.ObjectiveType.MANDATORY) mandatory++;
+                    else optional++;
+                    assertNotNull("Missing objective name key: " + level.levelId()
+                            + "/" + objective.id(), objective.displayNameKey());
+                    assertNotNull("Missing objective description key: " + level.levelId()
+                            + "/" + objective.id(), objective.descriptionKey());
+                    assertFalse(objective.displayNameKey().trim().isEmpty());
+                    assertFalse(objective.descriptionKey().trim().isEmpty());
+                }
+                assertEquals("Mandatory mission count: " + level.levelId(),
+                        expectedMandatory[i], mandatory);
+                assertEquals("Optional mission count: " + level.levelId(),
+                        expectedOptional[i], optional);
+            }
+        }
+
+        @Test public void level01OptionalEchoShardIsAReversibleSideBranch() {
+            LevelDefinition level = Level01.build();
             Objective optional = level.objective("optional-01");
             assertNotNull(optional);
+            assertTrue(optional.zone().contains(level.routeGraph().node("n5").position()));
+            assertTrue(level.routeGraph().isReachable("n1", "n5"));
+            assertTrue(level.routeGraph().isReachable("n5", "n1"));
+            assertFalse(optional.zone().contains(level.routeGraph().node("n1").position()));
+        }
+
+        @Test public void level02OptionalIsARealDetourNotTheMainline() {
+            LevelDefinition level = Level02.build();
+            Objective beacon = level.objective("route-beacon");
+            Objective optional = level.objective("optional-01");
+            assertNotNull(beacon);
+            assertNotNull(optional);
+            assertTrue(beacon.zone().contains(level.routeGraph().node("route-beacon").position()));
             assertFalse(optional.zone().contains(level.routeGraph().node("right-mid").position()));
             assertTrue(optional.zone().contains(level.routeGraph().node("optional-node").position()));
+            assertEquals(1, level.difficultyProfile().mandatoryObjectiveCount());
             assertEquals(1, level.difficultyProfile().optionalObjectiveCount());
             assertEquals(160.0, level.difficultyProfile().minWidthWorldUnits(), 1e-6);
             assertEquals(1_220.0, level.difficultyProfile().pathLengthWorldUnits(), 1e-6);
+        }
+
+        @Test public void level03AfterglowIsAnOptionalReturnDetour() {
+            LevelDefinition level = Level03.build();
+            assertNotNull(level.objective("reactor-cell"));
+            assertNotNull(level.objective("stabilizer"));
+            assertNotNull(level.objective("optional-01"));
+            assertTrue(level.routeGraph().isReachable("n5", "n6"));
+            assertTrue(level.routeGraph().isReachable("n6", "n5"));
         }
 
         @Test public void level03GateUsesFiniteBarrierAndOpenWarningClosedCycle() {
@@ -644,18 +693,15 @@ public class CoreAcceptanceTest {
             e.onPointerMove(1, 800, 800, 4_000L);
             e.onPointerMove(1, 800, 150, 6_000L);
             assertEquals(GameEngine.EngineState.COMPLETED, e.getState());
-            // Level01: par = 12000, no optional objectives. The player
-            // endpoint is sampled at 6000 ms, but the marker enters Goal at
-            // 5876 ms and the score uses that exact contact time.
+            // Level01: par = 12000. The mandatory Signal Core lies on the
+            // main line; the optional Echo Shard is intentionally skipped.
+            // Goal is contacted at 5876 ms, not at the final 6000 ms sample.
             assertEquals(5_876L, e.getActiveMs());
             assertEquals(1153, e.getScore());
             // Completion is timestamped at the first swept-disk contact with
             // the Goal zone, not at the end of the final pointer sample.
-            // Design note: with no optional objectives, allOptionalCompleted()
-            // is vacuously true, so this run yields 3 stars under the current
-            // engine. If the rule is changed to require at least one optional,
-            // this test will need to be updated to expect 2.
-            assertTrue("stars must be at least 2 (within par)", e.getStars() >= 2);
+            // Missing the Echo Shard keeps a within-par completion at two stars.
+            assertEquals(2, e.getStars());
         }
 
         @Test public void practiceModeGivesNoScore() {
