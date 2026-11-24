@@ -2,6 +2,7 @@ package com.neonmaze.app;
 
 import android.content.Context;
 import android.graphics.BitmapFactory;
+import android.system.ErrnoException;
 import android.system.Os;
 import android.util.Log;
 
@@ -256,7 +257,14 @@ public final class ContentPackInstaller {
             }
             if (Thread.currentThread().isInterrupted()) throw new IOException("Content installation cancelled");
             notify(listener, Phase.ACTIVATING, 0, 0, 1);
-            Os.rename(staging.getAbsolutePath(), target.getAbsolutePath());
+            try {
+                Os.rename(staging.getAbsolutePath(), target.getAbsolutePath());
+            } catch (ErrnoException renameFailure) {
+                // Keep the previous active pointer untouched and route this through
+                // the existing IOException rollback/cleanup path.
+                throw new IOException("Unable to atomically activate content version "
+                        + manifest.contentVersion, renameFailure);
+            }
             staging = null;
             writeActivePointer(manifest.contentVersion, manifest.minAppVersionCode,
                     manifest.maxAppVersionCode, actualHash);
