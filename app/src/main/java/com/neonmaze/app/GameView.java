@@ -3,7 +3,7 @@ package com.neonmaze.app;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Choreographer;
+import android.view.Choreographer;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -602,7 +602,7 @@ public final class GameView extends FrameLayout implements
         int mandatoryCollected = 0;
         for (com.neonmaze.core.LevelSystem.Objective objective : currentLevel.objectives()) {
             boolean required = objective.type() == com.neonmaze.core.LevelSystem.ObjectiveType.MANDATORY
-                    || objective.type() == com.neonmaze.core.LevelSystem.ObjectiveType.KEY;
+                    ;
             boolean complete = current.isObjectiveCollected(objective.id());
             if (complete) collected++;
             if (required) {
