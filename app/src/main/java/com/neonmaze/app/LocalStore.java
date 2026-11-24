@@ -26,6 +26,10 @@ import com.neonmaze.core.ReplaySystem.RunResult;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -84,7 +88,7 @@ public final class LocalStore {
     // ---------------------------------------------------------------------
 
     private static final String DATABASE_NAME = "neon_maze.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     // SharedPreferences
     private static final String PREFS_NAME = "neon_maze_settings";
@@ -96,6 +100,9 @@ public final class LocalStore {
     private static final String KEY_LANGUAGE = "language";
     private static final String KEY_LEFT_HANDED = "left_handed_ui";
     private static final String KEY_VOLUME_PERCENT = "volume_percent";
+    private static final String KEY_EQUIPPED_TRAIL = "equipped_trail";
+    private static final String KEY_EQUIPPED_FRAME = "equipped_frame";
+    private static final String KEY_EQUIPPED_EMBLEM = "equipped_emblem";
 
     // Replay payload retention is bounded per level/mode; scalar run history is retained.
     private static final int MAX_RUN_RECORDS_PER_LEVEL_MODE = 20;
@@ -368,6 +375,30 @@ public final class LocalStore {
         }
     }
 
+    /** Immutable, slot-validated Cosmetic loadout persisted locally in SharedPreferences. */
+    public static final class CosmeticLoadout {
+        public final String trailId;
+        public final String frameId;
+        public final String emblemId;
+
+        public CosmeticLoadout(String trailId, String frameId, String emblemId) {
+            this.trailId = Objects.requireNonNull(trailId, "trailId");
+            this.frameId = Objects.requireNonNull(frameId, "frameId");
+            this.emblemId = emblemId == null ? "" : emblemId;
+        }
+
+        public String forKind(int kind) {
+            if (kind == ProgressRules.COSMETIC_TRAIL) return trailId;
+            if (kind == ProgressRules.COSMETIC_FRAME) return frameId;
+            if (kind == ProgressRules.COSMETIC_EMBLEM) return emblemId;
+            throw new IllegalArgumentException("unknown Cosmetic slot");
+        }
+
+        public static CosmeticLoadout defaults() {
+            return new CosmeticLoadout("trail.mint", "frame.none", "");
+        }
+    }
+
     /** Immutable snapshot of all persisted user settings. */
     public static final class Settings {
         public final boolean soundEnabled;
@@ -448,7 +479,58 @@ public final class LocalStore {
     }
 
     public void resetSettings() {
-        prefs.edit().clear().apply();
+        // A Settings reset must not silently unequip a Cosmetic loadout.
+        prefs.edit().remove(KEY_SOUND).remove(KEY_HAPTICS)
+                .remove(KEY_REDUCED_MOTION).remove(KEY_REDUCED_EFFECTS)
+                .remove(KEY_HIGH_CONTRAST).remove(KEY_LANGUAGE)
+                .remove(KEY_LEFT_HANDED).remove(KEY_VOLUME_PERCENT).apply();
+    }
+
+    private void resetCosmeticLoadout() {
+        prefs.edit().remove(KEY_EQUIPPED_TRAIL).remove(KEY_EQUIPPED_FRAME)
+                .remove(KEY_EQUIPPED_EMBLEM).apply();
+    }
+
+    /** Reads the active loadout; stale/unknown IDs safely fall back to slot defaults. */
+    @NonNull
+    public CosmeticLoadout loadCosmeticLoadout() {
+        CosmeticLoadout defaults = CosmeticLoadout.defaults();
+        String trail = validCosmeticId(prefs.getString(KEY_EQUIPPED_TRAIL, defaults.trailId),
+                ProgressRules.COSMETIC_TRAIL) ? prefs.getString(KEY_EQUIPPED_TRAIL, defaults.trailId)
+                : defaults.trailId;
+        String frame = validCosmeticId(prefs.getString(KEY_EQUIPPED_FRAME, defaults.frameId),
+                ProgressRules.COSMETIC_FRAME) ? prefs.getString(KEY_EQUIPPED_FRAME, defaults.frameId)
+                : defaults.frameId;
+        String emblem = prefs.getString(KEY_EQUIPPED_EMBLEM, "");
+        if (!emblem.isEmpty() && !validCosmeticId(emblem, ProgressRules.COSMETIC_EMBLEM)) {
+            emblem = "";
+        }
+        return new CosmeticLoadout(trail, frame, emblem);
+    }
+
+    /**
+     * Saves a complete slot set atomically. The caller must only offer unlocked
+     * items; this method independently rejects unknown IDs and cross-slot IDs.
+     */
+    public void saveCosmeticLoadout(@NonNull CosmeticLoadout loadout) {
+        Objects.requireNonNull(loadout, "loadout");
+        if (!validCosmeticId(loadout.trailId, ProgressRules.COSMETIC_TRAIL)
+                || !validCosmeticId(loadout.frameId, ProgressRules.COSMETIC_FRAME)
+                || (!loadout.emblemId.isEmpty()
+                && !validCosmeticId(loadout.emblemId, ProgressRules.COSMETIC_EMBLEM))) {
+            throw new IllegalArgumentException("Cosmetic loadout contains an unknown or wrong-slot item");
+        }
+        prefs.edit().putString(KEY_EQUIPPED_TRAIL, loadout.trailId)
+                .putString(KEY_EQUIPPED_FRAME, loadout.frameId)
+                .putString(KEY_EQUIPPED_EMBLEM, loadout.emblemId).apply();
+    }
+
+    private static boolean validCosmeticId(@Nullable String id, int expectedKind) {
+        if (id == null || id.isEmpty()) return false;
+        for (ProgressRules.CosmeticDef definition : ProgressRules.cosmetics()) {
+            if (definition.id().equals(id)) return definition.kind() == expectedKind;
+        }
+        return false;
     }
 
     // =====================================================================
@@ -602,8 +684,8 @@ public final class LocalStore {
         Objects.requireNonNull(input, "input");
         Catalog catalog = input.catalog;
         ProgressRules.RunRecord run = input.progressRun;
-        if (catalog.size() != DailyChallenge.CAMPAIGN_LEVEL_COUNT) {
-            throw new IllegalArgumentException("LocalStore requires the five-level Campaign Catalog");
+        if (catalog.isEmpty()) {
+            throw new IllegalArgumentException("LocalStore requires a non-empty Campaign Catalog");
         }
         LevelDefinition level = catalog.byId(run.levelId());
         ReplayTrace trace = input.trace;
@@ -615,10 +697,28 @@ public final class LocalStore {
             }
         }
         long now = System.currentTimeMillis();
+        String payloadHash = payloadHash(run);
 
         try (SQLiteDatabase db = dbHelper.getWritableDatabase()) {
             db.beginTransaction();
             try {
+                try (Cursor existing = db.query("run_records",
+                        new String[]{"id", "payload_hash"}, "run_id = ?",
+                        new String[]{run.runId()}, null, null, null)) {
+                    if (existing.moveToFirst()) {
+                        long existingRowId = existing.getLong(0);
+                        String storedHash = existing.getString(1);
+                        if (!payloadHash.equals(storedHash)) {
+                            throw new SQLiteException(
+                                    "runId was already committed with a different result payload");
+                        }
+                        ProgressRules.ProgressSnapshot current = readProgressSnapshot(db, catalog);
+                        db.setTransactionSuccessful();
+                        return new RecordRunResult(existingRowId,
+                                Collections.<String>emptyList(),
+                                Collections.<String>emptyList(), 0, 0, current);
+                    }
+                }
                 ProgressRules.ProgressSnapshot prior = readProgressSnapshot(db, catalog);
                 ProgressRules.ProgressDelta delta = ProgressRules.evaluate(catalog, prior, run);
                 if (trace != null && run.mode() == ReplayMode.CAMPAIGN
@@ -637,6 +737,8 @@ public final class LocalStore {
                 }
 
                 ContentValues runValues = new ContentValues();
+                runValues.put("run_id", run.runId());
+                runValues.put("payload_hash", payloadHash);
                 runValues.put("mode", run.mode().name());
                 runValues.put("level_id", run.levelId());
                 runValues.put("result", run.result().name());
@@ -668,6 +770,52 @@ public final class LocalStore {
                 db.endTransaction();
             }
         }
+    }
+
+    /** SHA-256 over the canonical run outcome; optional Replay bytes are deliberately excluded. */
+    private static String payloadHash(ProgressRules.RunRecord run) {
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(512);
+            try (DataOutputStream out = new DataOutputStream(bytes)) {
+                out.writeUTF(run.runId());
+                out.writeUTF(run.levelId());
+                out.writeUTF(run.mode().name());
+                out.writeUTF(run.result().name());
+                out.writeLong(run.elapsedMs());
+                out.writeBoolean(run.assisted());
+                writeNullableUtf(out, run.dailyChallengeId());
+                writeCanonicalSet(out, run.collectedObjectiveIds());
+                writeCanonicalSet(out, run.collectedKeyIds());
+                writeCanonicalSet(out, run.passedGateIds());
+            }
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(bytes.toByteArray());
+            final char[] hex = "0123456789abcdef".toCharArray();
+            char[] output = new char[digest.length * 2];
+            for (int i = 0; i < digest.length; i++) {
+                int value = digest[i] & 0xff;
+                output[i * 2] = hex[value >>> 4];
+                output[i * 2 + 1] = hex[value & 0x0f];
+            }
+            return new String(output);
+        } catch (IOException impossible) {
+            throw new IllegalStateException("Unable to encode the run payload", impossible);
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new AssertionError("SHA-256 is required by the Java platform", impossible);
+        }
+    }
+
+    private static void writeNullableUtf(DataOutputStream out, @Nullable String value)
+            throws IOException {
+        out.writeBoolean(value != null);
+        if (value != null) out.writeUTF(value);
+    }
+
+    private static void writeCanonicalSet(DataOutputStream out, Set<String> values)
+            throws IOException {
+        ArrayList<String> sorted = new ArrayList<>(values);
+        Collections.sort(sorted);
+        out.writeInt(sorted.size());
+        for (String value : sorted) out.writeUTF(value);
     }
 
     @Nullable
@@ -1354,6 +1502,7 @@ public final class LocalStore {
                     db.setTransactionSuccessful();
                 } finally { db.endTransaction(); }
             }
+            resetCosmeticLoadout();
             return null;
         });
     }
@@ -1432,6 +1581,8 @@ public final class LocalStore {
 
             db.execSQL("CREATE TABLE run_records ("
                     + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "run_id TEXT NOT NULL,"
+                    + "payload_hash TEXT NOT NULL,"
                     + "mode TEXT NOT NULL,"
                     + "level_id TEXT NOT NULL,"
                     + "result TEXT NOT NULL,"
@@ -1446,6 +1597,8 @@ public final class LocalStore {
                     + "created_at INTEGER NOT NULL)");
             db.execSQL("CREATE INDEX idx_run_records_level_mode "
                     + "ON run_records(level_id, mode, created_at DESC)");
+            db.execSQL("CREATE UNIQUE INDEX idx_run_records_run_id "
+                    + "ON run_records(run_id)");
 
             db.execSQL("CREATE TABLE achievements ("
                     + "achievement_id TEXT PRIMARY KEY,"
@@ -1464,11 +1617,24 @@ public final class LocalStore {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            // Part07 does not alter the v1 schema. Any future version bump must
-            // add a reviewed, sequential migration before it is allowed to open
-            // an existing user database; never silently continue with unknown schema.
-            throw new SQLiteException("No approved migration path from schema "
-                    + oldVersion + " to " + newVersion);
+            int version = oldVersion;
+            if (version == 1 && newVersion >= 2) {
+                // Preserve every historical row. Legacy rows receive distinct IDs
+                // that cannot be mistaken for a newly generated app Run UUID.
+                db.execSQL("ALTER TABLE run_records ADD COLUMN run_id TEXT");
+                db.execSQL("ALTER TABLE run_records ADD COLUMN payload_hash TEXT");
+                db.execSQL("UPDATE run_records SET run_id = 'legacy:' || id "
+                        + "WHERE run_id IS NULL OR run_id = ''");
+                db.execSQL("UPDATE run_records SET payload_hash = 'legacy:' || id "
+                        + "WHERE payload_hash IS NULL OR payload_hash = ''");
+                db.execSQL("CREATE UNIQUE INDEX idx_run_records_run_id "
+                        + "ON run_records(run_id)");
+                version = 2;
+            }
+            if (version != newVersion) {
+                throw new SQLiteException("No approved migration path from schema "
+                        + oldVersion + " to " + newVersion);
+            }
         }
     }
 }

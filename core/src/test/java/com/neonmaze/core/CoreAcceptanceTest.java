@@ -21,6 +21,7 @@ import com.neonmaze.core.LevelSystem.RouteEdge;
 import com.neonmaze.core.LevelSystem.RouteGraph;
 import com.neonmaze.core.LevelSystem.RouteNode;
 import com.neonmaze.core.LevelSystem.Zone;
+import com.neonmaze.core.ReplaySystem;
 import com.neonmaze.core.ReplaySystem.Compatibility;
 import com.neonmaze.core.ReplaySystem.GhostTimeline;
 import com.neonmaze.core.ReplaySystem.ReplayCodec;
@@ -33,6 +34,7 @@ import com.neonmaze.core.levels.Level02;
 import com.neonmaze.core.levels.Level03;
 import com.neonmaze.core.levels.Level04;
 import com.neonmaze.core.levels.Level05;
+import com.neonmaze.core.levels.BuiltInLevelCatalog;
 
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -283,6 +285,43 @@ public class CoreAcceptanceTest {
             assertEquals(Level01.LEVEL_ID, catalog.get(0).levelId());
             assertEquals(Level05.LEVEL_ID, catalog.get(4).levelId());
             assertEquals(catalog.catalogHash(), DailyChallenge.canonicalCatalogHash(catalog));
+        }
+
+        @Test public void builtInCatalogKeepsAllFiveValidatedLevelsInOrder() {
+            Catalog catalog = BuiltInLevelCatalog.create();
+            assertEquals(5, catalog.size());
+            assertEquals(Level01.LEVEL_ID, catalog.get(0).levelId());
+            assertEquals(Level02.LEVEL_ID, catalog.get(1).levelId());
+            assertEquals(Level03.LEVEL_ID, catalog.get(2).levelId());
+            assertEquals(Level04.LEVEL_ID, catalog.get(3).levelId());
+            assertEquals(Level05.LEVEL_ID, catalog.get(4).levelId());
+            for (LevelDefinition level : catalog.all()) requireNoProblems(level);
+        }
+
+        @Test public void dailyChallengeSupportsCatalogGrowthWithoutFiveLevelAssumption() {
+            LevelDefinition base = Level01.build();
+            LevelDefinition sixth = new LevelDefinition.Builder()
+                    .levelId("level-06-afterglow").levelRevision(1)
+                    .displayNameKey("level_06_name").worldBounds(base.worldBounds())
+                    .outerBoundary(base.outerBoundary()).holeBoundaries(base.holeBoundaries())
+                    .startZone(base.startZone()).goalZone(base.goalZone())
+                    .playerRadius(base.playerRadius()).safetyMargin(base.safetyMargin())
+                    .routeGraph(base.routeGraph()).objectives(base.objectives())
+                    .gates(base.gates()).safeZones(base.safeZones())
+                    .parTimeMs(base.parTimeMs()).timeAttackLimitMs(base.timeAttackLimitMs()).build();
+            Catalog expanded = new Catalog(List.of(Level01.build(), Level02.build(), Level03.build(),
+                    Level04.build(), Level05.build(), sixth));
+            assertEquals(6, expanded.size());
+            DailyChallenge.Selection first = DailyChallenge.forUtcDate(
+                    "2026-11-24", ReplaySystem.GAME_RULES_VERSION, expanded);
+            DailyChallenge.Selection repeated = DailyChallenge.forUtcDate(
+                    "2026-11-24", ReplaySystem.GAME_RULES_VERSION, expanded);
+            assertEquals(first.challengeId(), repeated.challengeId());
+            assertTrue(first.levelNumber() >= 1 && first.levelNumber() <= expanded.size());
+            assertTrue(DailyChallenge.hasValidChallengeIdShape(first.challengeId()));
+            assertEquals(first.levelId(), DailyChallenge.levelIdFromChallengeId(first.challengeId()));
+            assertFalse(DailyChallenge.hasValidChallengeIdShape(
+                    "NMZR-D2-2026-11-24-level 06"));
         }
     }
 
@@ -651,11 +690,18 @@ public class CoreAcceptanceTest {
             assertEquals(1153, e.getScore());
             // Completion is timestamped at the first swept-disk contact with
             // the Goal zone, not at the end of the final pointer sample.
-            // Design note: with no optional objectives, allOptionalCompleted()
-            // is vacuously true, so this run yields 3 stars under the current
-            // engine. If the rule is changed to require at least one optional,
-            // this test will need to be updated to expect 2.
-            assertTrue("stars must be at least 2 (within par)", e.getStars() >= 2);
+            // A no-Optional level uses the explicit 80%-of-Par third-star target.
+            assertEquals(3, e.getStars());
+        }
+
+        @Test public void noOptionalLevelUsesFastParThresholdForThirdStar() {
+            LevelDefinition level = Level01.build();
+            long threshold = (long) Math.floor(level.parTimeMs()
+                    * ProgressRules.NO_OPTIONAL_THREE_STAR_PAR_RATIO);
+            assertEquals(3, ProgressRules.starsFor(level, Collections.emptySet(), threshold, true));
+            assertEquals(2, ProgressRules.starsFor(level, Collections.emptySet(), threshold + 1L, true));
+            assertEquals(2, ProgressRules.starsFor(level, Collections.emptySet(), level.parTimeMs(), true));
+            assertEquals(1, ProgressRules.starsFor(level, Collections.emptySet(), level.parTimeMs() + 1L, true));
         }
 
         @Test public void practiceModeGivesNoScore() {
@@ -737,6 +783,39 @@ public class CoreAcceptanceTest {
     }
 
     public static class EngineGateTest {
+
+        @Test public void gatePassIsCapturedAndNextGateBecomesRelevant() {
+            LevelDefinition level = Level05.build();
+            GameEngine engine = new GameEngine(level, ReplayMode.CAMPAIGN, 0L);
+            assertEquals("timed-gate", engine.getRelevantGateId());
+            engine.onPointerDown(1, 500.0, 150.0, 0L);
+            engine.onPointerMove(1, 500.0, 400.0, 1_000L);
+            assertTrue(engine.getPassedGateIds().contains("timed-gate"));
+            assertEquals("exit-gate", engine.getRelevantGateId());
+            engine.interrupt("test-after-first-gate");
+            assertTrue(engine.getOutcome().passedGateIds().contains("timed-gate"));
+            ProgressRules.RunRecord record = ProgressRules.RunRecord.fromOutcome(
+                    "gate-pass-test", level, engine.getOutcome(), (String) null);
+            assertTrue(record.passedGateIds().contains("timed-gate"));
+        }
+
+        @Test public void presentationTrailAndGateLedgerSurviveReplayOverflow() {
+            GameEngine engine = new GameEngine(Level03.build(), ReplayMode.CAMPAIGN, 0L);
+            engine.onPointerDown(1, 160.0, 510.0, 0L);
+            for (int i = 1; i <= 95_100; i++) {
+                double x = 160.0 + (880.0 * i / 95_100.0);
+                engine.onPointerMove(1, x, 510.0, i);
+                if (engine.getState() != GameEngine.EngineState.RUNNING) break;
+            }
+            assertEquals(GameEngine.EngineState.COMPLETED, engine.getState());
+            assertTrue(engine.getTrail().size() <= GameEngine.MAX_TRAIL_POINTS);
+            assertTrue(engine.getOutcome().replayUnavailable());
+            assertNull(engine.getOutcome().trace());
+            assertTrue(engine.getOutcome().passedGateIds().contains("timed-gate"));
+            ProgressRules.RunRecord record = ProgressRules.RunRecord.fromOutcome(
+                    "gate-overflow-test", Level03.build(), engine.getOutcome(), (String) null);
+            assertTrue(record.passedGateIds().contains("timed-gate"));
+        }
 
         @Test public void lockedGateBlocksButDoesNotFail() {
             LevelDefinition level = Level04.build();

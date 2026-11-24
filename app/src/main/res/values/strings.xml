@@ -1,7 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">NEON MAZE</string>
+    <string name="gameplay_sector_label">SECTOR %1$02d / 05  •  %2$s</string>
+    <string name="gameplay_start_label">START</string>
+    <string name="gameplay_goal_label">EXIT</string>
     <string name="gameplay_pause">Pause</string>
+    <string name="gameplay_ready_hint">Touch the start marker to begin</string>
+    <string name="gameplay_success_hint">Maze cleared · result incoming</string>
+    <string name="gameplay_failure_hint">Run ended · result incoming</string>
+    <string name="gameplay_restart">Restart run</string>
     <string name="gameplay_elapsed_time">Elapsed time %1$s</string>
     <string name="gameplay_remaining_time">Time remaining %1$s</string>
     <string name="gameplay_objectives_summary">Objectives %1$d of %2$d</string>
@@ -9,10 +16,14 @@
     <string name="gameplay_objectives_combined">%1$s · %2$s</string>
     <string name="gameplay_objective_blocked">Required objective missing</string>
     <string name="gameplay_no_objectives">No objectives</string>
-    <string name="gameplay_gate_open">Gate open</string>
-    <string name="gameplay_gate_warning">Gate closing soon</string>
-    <string name="gameplay_gate_closed">Gate closed</string>
-    <string name="gameplay_gate_locked">Gate locked; key required</string>
+    <string name="gameplay_gate_open">Open</string>
+    <string name="gameplay_gate_warning">Closing soon</string>
+    <string name="gameplay_gate_closed">Closed</string>
+    <string name="gameplay_gate_locked">Locked · key required</string>
+    <string name="gameplay_gate_state">%1$s · %2$s</string>
+    <string name="gameplay_gate_timed_name">Timed gate</string>
+    <string name="gameplay_gate_exit_name">Exit gate</string>
+    <string name="gameplay_gate_generic">Gate %1$d</string>
     <string name="brand_eyebrow">PRECISION / DISCOVERY / MASTERY</string>
     <string name="home_title">Find your line. Own the maze.</string>
     <string name="home_subtitle">A precision tracing experience built around focus, timing and control.</string>
@@ -27,12 +38,12 @@
     <string name="home_daily_done">Today\u2019s best: %1$s</string>
     <string name="home_daily_unavailable">Daily challenge could not be loaded.</string>
     <string name="home_progress">Campaign progress</string>
-    <string name="home_levels_done">%1$d / 5 levels completed</string>
+    <string name="home_levels_done">%1$d / %2$d levels completed</string>
     <string name="home_new_player">Your first trace starts here.</string>
     <string name="home_returning">Your next precision challenge is ready.</string>
-    <string name="home_all_complete">All five campaign levels completed.</string>
+    <string name="home_all_complete">All campaign levels completed.</string>
     <string name="campaign_title">Campaign</string>
-    <string name="campaign_subtitle">Five handcrafted routes. One evolving skill.</string>
+    <string name="campaign_subtitle">Handcrafted routes. One evolving skill.</string>
     <string name="campaign_level">LEVEL %1$d</string>
     <string name="campaign_locked">Locked</string>
     <string name="campaign_available">Available</string>
@@ -62,7 +73,7 @@
     <string name="modes_title">Choose your protocol</string>
     <string name="modes_subtitle">Each mode follows its own pause and record rules.</string>
     <string name="mode_campaign">Campaign</string>
-    <string name="mode_campaign_desc">Progress through the five handcrafted levels. Valid runs can earn stars and unlock routes.</string>
+    <string name="mode_campaign_desc">Progress through handcrafted levels. Valid runs can earn stars and unlock routes.</string>
     <string name="mode_practice">Practice</string>
     <string name="mode_practice_desc">Replay any unlocked route. Pause is allowed; no campaign stars or unlocks.</string>
     <string name="mode_time_attack">Time Attack</string>
@@ -131,7 +142,7 @@
     <string name="tutorial_step_hold">02  /  HOLD</string>
     <string name="tutorial_step_turn">03  /  TURN</string>
     <string name="tutorial_step_goal">04  /  GOAL</string>
-    <string name="tutorial_instructions">Touch the marked Start zone. Keep one finger on the screen and follow the illuminated corridor. Do not lift until you reach Goal.</string>
+    <string name="tutorial_instructions">Touch Start and keep one finger on the route until Goal. Follow the real training maze to collect its key, return to unlock the Gate, and cross it. Pause is available during the run; Exit asks for confirmation.</string>
     <string name="tutorial_start">Start interactive tutorial</string>
     <string name="tutorial_skip">Skip tutorial</string>
     <string name="tutorial_active_hint">Keep contact and follow the route. A lifted finger interrupts the run.</string>
@@ -139,6 +150,7 @@
     <string name="tutorial_retry">Try again</string>
     <string name="tutorial_finish">Finish tutorial</string>
     <string name="tutorial_exit_confirm">Leave the tutorial? The current practice run will be interrupted and will not award campaign progress.</string>
+    <string name="tutorial_exit_continue">Continue tutorial</string>
     <string name="achievements_title">Achievements</string>
     <string name="achievements_subtitle">Earned through verifiable play. No XP, loot boxes or purchases.</string>
     <string name="achievements_empty">Your first achievement is waiting.</string>
@@ -201,7 +213,12 @@
     <string name="result_path_review">Path review</string>
     <string name="result_path_unavailable">Path review is unavailable for this run.</string>
     <string name="result_save_pending">Saving result…</string>
-    <string name="result_save_error">Result could not be saved. Your run remains visible until you leave this screen.</string>
+    <string name="result_save_error">Result could not be saved. Keep this result open and retry with the same run ID.</string>
+    <string name="result_save_unavailable">This result could not be prepared for saving. No retry payload is available.</string>
+    <string name="result_save_retry">Retry saving this result</string>
+    <string name="result_save_success">Result saved successfully</string>
+    <string name="result_save_retry_first">Save or retry the previous result before starting another run.</string>
+    <string name="result_restart_interrupted">Restart interrupted run</string>
     <string name="result_failed_path">Path boundary crossed</string>
     <string name="result_failed_incomplete">Required objective or Goal was not reached</string>
     <string name="result_failed_time">Time limit reached</string>
@@ -249,11 +266,10 @@
     <string name="game_resume_touch">Continue — touch the marker</string>
     <string name="game_restart">Restart route</string>
     <string name="game_exit">Exit run</string>
+    <string name="game_exit_continue">Continue run</string>
     <string name="game_exit_title">Leave this run?</string>
     <string name="game_exit_confirm">The current attempt will be interrupted. It will not be recorded as a failure or earn Campaign rewards.</string>
     <string name="profile_best">Best unassisted Campaign time</string>
-
-    <!-- Part08 screen states and details -->
     <string name="home_loading">Loading your local progress…</string>
     <string name="home_store_error">Local progress could not be loaded. Your saved data has not been changed.</string>
     <string name="home_retry">Retry loading</string>
@@ -268,8 +284,6 @@
     <string name="campaign_personal_best">Personal best</string>
     <string name="profile_avatar_photo_label">Custom photo</string>
     <string name="profile_avatar_preview">AVATAR PREVIEW</string>
-
-    <!-- Accessible level-selector labels -->
     <string name="mode_level_available_description">Level %1$d, available</string>
     <string name="mode_level_locked_description">Level %1$d, locked</string>
     <string name="profile_load_error">The local profile could not be loaded. Editing is paused to protect existing data.</string>
@@ -287,13 +301,9 @@
     <string name="tutorial_hint_hold">Keep one finger on the screen. Follow the corridor; lifting interrupts the lesson.</string>
     <string name="tutorial_hint_turn">Approach the bend gradually. Stay centered inside the illuminated corridor.</string>
     <string name="tutorial_hint_goal">Keep tracing until the Goal marker is reached. Do not lift early.</string>
-
-    <!-- Part08 / persisted SFX volume -->
     <string name="settings_volume">Sound effects volume</string>
     <string name="settings_volume_value">%1$d%%</string>
     <string name="settings_volume_accessibility">Sound effects volume: %1$d percent</string>
-
-    <!-- Phase02 / first-launch resource bootstrap -->
     <string name="startup_title">Preparing your maze</string>
     <string name="startup_subtitle">Checking the game resources and optional content updates.</string>
     <string name="startup_checking_local">Preparing game resources</string>
@@ -316,5 +326,40 @@
     <string name="startup_retry">Retry</string>
     <string name="startup_continue_offline">Continue with local resources</string>
     <string name="startup_local_privacy">Player profile and progress remain on this device.</string>
-
+    <string name="cosmetic_equipped">Equipped</string>
+    <string name="cosmetic_available">Unlocked</string>
+    <string name="cosmetic_equip">Equip</string>
+    <string name="profile_equipped_cosmetics">Active loadout</string>
+    <string name="profile_equipped_trail">Trail: %1$s</string>
+    <string name="profile_equipped_frame">Marker frame: %1$s</string>
+    <string name="profile_equipped_emblem">Emblem: %1$s</string>
+    <string name="game_playfield_accessibility">Maze playfield. Follow the route from Start to Goal while keeping one finger down.</string>
+    <string name="game_playfield_accessibility_detail">Maze status: %1$s</string>
+    <string name="result_replay_incompatible">This path recording does not match the current level geometry or rules, so it cannot be played safely.</string>
+    <string name="replay_play">Play</string>
+    <string name="replay_pause">Pause</string>
+    <string name="replay_speed">Speed: %1$s</string>
+    <string name="replay_position">%1$s / %2$s</string>
+    <string name="tutorial_step_key">04 / KEY</string>
+    <string name="tutorial_step_gate">05 / GATE</string>
+    <string name="tutorial_hint_key">Find the key in the left branch. Keep your finger down and return through the central junction.</string>
+    <string name="tutorial_hint_gate">The key unlocks the upper gate. Cross the gate and continue to the Goal; Pause is available at any time, and Exit asks for confirmation.</string>
+    <string name="cosmetic_unequip">Unequip emblem</string>
+    <string name="cosmetic_unlock_default">Available from the start</string>
+    <string name="cosmetic_unlock_achievement">Unlock achievement: %1$s</string>
+    <string name="cosmetic_unlock_completions">Unlock after %1$d Campaign completions</string>
+    <string name="replay_ghost_legend">Your route · violet line: ghost route</string>
+    <string name="tutorial_exit_button">Exit tutorial</string>
+    <string name="game_accessibility_summary">%1$s · %2$s · objectives %3$d of %4$d · mandatory %5$d of %6$d · keys %7$d · gate %8$s</string>
+    <string name="game_accessibility_state_ready">Ready</string>
+    <string name="game_accessibility_state_running">In progress</string>
+    <string name="game_accessibility_state_paused">Paused</string>
+    <string name="game_accessibility_state_failed">Failed</string>
+    <string name="game_accessibility_state_completed">Completed</string>
+    <string name="game_accessibility_state_interrupted">Interrupted</string>
+    <string name="game_accessibility_gate_none">No active gate</string>
+    <string name="game_accessibility_gate_open">Open</string>
+    <string name="game_accessibility_gate_warning">Closing soon</string>
+    <string name="game_accessibility_gate_closed">Closed</string>
+    <string name="game_accessibility_gate_locked">Locked</string>
 </resources>

@@ -82,6 +82,9 @@ import java.util.Set;
  */
 public final class GameEngine {
 
+    /** Maximum retained points in the presentation-only trail. */
+    public static final int MAX_TRAIL_POINTS = 16_384;
+
     // =====================================================================
     // Public enums
     // =====================================================================
@@ -135,12 +138,13 @@ public final class GameEngine {
         private final List<String> collectedKeyIds;
         private final FailureReason failureReason;
         private final boolean replayUnavailable;
+        private final Set<String> passedGateIds;
 
         private RunOutcome(ReplayTrace trace, ReplayMode mode, String interruptReason,
                            int score, int stars, long elapsedMs, boolean assisted,
                            RunResult result, List<String> collectedObjectiveIds,
                            List<String> collectedKeyIds, FailureReason failureReason,
-                           boolean replayUnavailable) {
+                           boolean replayUnavailable, Set<String> passedGateIds) {
             this.trace = trace;
             this.mode = mode;
             this.interruptReason = interruptReason;
@@ -155,6 +159,8 @@ public final class GameEngine {
                     new ArrayList<>(collectedKeyIds));
             this.failureReason = failureReason;
             this.replayUnavailable = replayUnavailable;
+            this.passedGateIds = Collections.unmodifiableSet(
+                    new LinkedHashSet<>(passedGateIds));
         }
 
         public ReplayTrace trace() {
@@ -204,6 +210,9 @@ public final class GameEngine {
         public boolean replayUnavailable() {
             return replayUnavailable;
         }
+
+        /** Gates crossed by this run, independent of optional Replay retention. */
+        public Set<String> passedGateIds() { return passedGateIds; }
     }
 
     /** Immutable gate state included in a render-facing Snapshot. */
@@ -239,9 +248,9 @@ public final class GameEngine {
 
     /**
      * Immutable state view for renderers and HUD code. Gate/event/objective
-     * collections are defensive snapshots. The trail is an unmodifiable,
-     * append-only view of the current run so a renderer can reuse it without
-     * copying the full path every frame; a restart replaces the backing list.
+     * collections are defensive snapshots. The presentation trail is a
+     * bounded view and may be compacted independently of collision and Replay
+     * data; a restart replaces its backing list.
      */
     public static final class Snapshot {
         private final ReplayMode mode;
@@ -339,6 +348,7 @@ public final class GameEngine {
 
     private final Set<String> collectedKeys;
     private final Set<String> collectedObjectives;
+    private final Set<String> passedGateIds = new LinkedHashSet<>();
 
     // Primitive, grow-on-demand replay buffers: no TraceSample allocation per input sample.
     private long[] recordedSampleTimes;
@@ -497,6 +507,14 @@ public final class GameEngine {
         return Collections.unmodifiableSet(collectedKeys);
     }
 
+    /** Allocation-free membership check for UI/accessibility observers. */
+    public boolean hasCollectedKey(String keyId) {
+        return keyId != null && collectedKeys.contains(keyId);
+    }
+
+    /** Current collected-key count without wrapping/copying the key set. */
+    public int getCollectedKeyCount() { return collectedKeys.size(); }
+
     public boolean isObjectiveBlocked() {
         return objectiveBlocked;
     }
@@ -523,6 +541,38 @@ public final class GameEngine {
 
     public boolean isObjectiveCollected(String objectiveId) {
         return collectedObjectives.contains(objectiveId);
+    }
+
+    /**
+     * Returns the nearest not-yet-crossed Gate by passage-centroid distance.
+     * This is a HUD relevance hint only; it is not route planning or navigation.
+     */
+    public String getRelevantGateId() {
+        Vec2 reference = marker != null ? marker : level.startZone().centroid();
+        String selectedId = null;
+        double selectedDistance = Double.POSITIVE_INFINITY;
+        for (Gate gate : level.gates()) {
+            if (passedGateIds.contains(gate.id())) continue;
+            Vec2 center = gate.passage().centroid();
+            double dx = center.x() - reference.x();
+            double dy = center.y() - reference.y();
+            double distanceSquared = dx * dx + dy * dy;
+            if (distanceSquared < selectedDistance) {
+                selectedDistance = distanceSquared;
+                selectedId = gate.id();
+            }
+        }
+        return selectedId;
+    }
+
+    /** Complete authoritative Gate pass set for the current run. */
+    public Set<String> getPassedGateIds() {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(passedGateIds));
+    }
+
+    /** Allocation-free Gate ledger lookup for live UI and tutorial observers. */
+    public boolean hasPassedGate(String gateId) {
+        return gateId != null && passedGateIds.contains(gateId);
     }
 
     public GateRenderState getGateRenderState(String gateId) {
@@ -735,6 +785,7 @@ public final class GameEngine {
         trailView = null;
         collectedKeys.clear();
         collectedObjectives.clear();
+        passedGateIds.clear();
         recordedSampleCount = 0;
         for (int i = 0; i < recordedEventCount; i++) {
             recordedEventTypes[i] = null;
@@ -771,7 +822,7 @@ public final class GameEngine {
                     gate.barrierStart(), gate.barrierEnd());
         }
         marker = startPosition;
-        trail.add(startPosition);
+        appendTrailPoint(startPosition);
         recordSample(0L, startPosition);
         recordEvent(0L, "START", "mode=" + mode.name());
         state = EngineState.RUNNING;
@@ -940,6 +991,7 @@ public final class GameEngine {
                         && collectedKeys.contains(gate.requiredKeyId());
                 if (gateHeldOpen[index] || gate.isOpenAt(contactMs, keyCollected)) {
                     gateHeldOpen[index] = true;
+                    passedGateIds.add(gate.id());
                     commitPosition(contactX, contactY, contactMs);
                     recordEvent(contactMs, "GATE_PASS", gate.id());
                 }
@@ -1008,6 +1060,27 @@ public final class GameEngine {
         if (!level.goalZone().contains(marker)) objectiveBlocked = false;
     }
 
+    /**
+     * Bounds only the presentation trail. Collision uses the live swept segment
+     * and Replay has its own sample budget, so neither authoritative source is
+     * simplified when display vertices are compacted.
+     */
+    private void appendTrailPoint(Vec2 point) {
+        if (trail.size() >= MAX_TRAIL_POINTS) {
+            int lastIndex = trail.size() - 1;
+            ArrayList<Vec2> compacted = new ArrayList<>(MAX_TRAIL_POINTS / 2 + 2);
+            compacted.add(trail.get(0));
+            for (int i = 2; i < lastIndex; i += 2) {
+                compacted.add(trail.get(i));
+            }
+            if (lastIndex > 0) compacted.add(trail.get(lastIndex));
+            trail = compacted;
+            trailView = null;
+        }
+        trail.add(point);
+        trailView = null;
+    }
+
     private void commitPosition(Vec2 position, long timeMs) {
         if (position == null) return;
         commitPosition(position.x(), position.y(), timeMs, position);
@@ -1021,8 +1094,7 @@ public final class GameEngine {
         if (marker == null || Math.abs(marker.x() - x) > 1e-12
                 || Math.abs(marker.y() - y) > 1e-12) {
             marker = reusable != null ? reusable : new Vec2(x, y);
-            trail.add(marker);
-            trailView = null;
+            appendTrailPoint(marker);
             recordSample(timeMs, x, y);
         }
     }
@@ -1593,7 +1665,8 @@ public final class GameEngine {
                 new ArrayList<>(sortedIds(collectedObjectives)),
                 new ArrayList<>(sortedIds(collectedKeys)),
                 failureReason,
-                replayUnavailable);
+                replayUnavailable,
+                new LinkedHashSet<>(sortedIds(passedGateIds)));
     }
 
     private RunResult mapResult() {

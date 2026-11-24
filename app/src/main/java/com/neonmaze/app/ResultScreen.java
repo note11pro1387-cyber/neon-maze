@@ -5,7 +5,12 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.view.View;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
@@ -16,6 +21,7 @@ import com.neonmaze.core.LevelSystem.LevelDefinition;
 import com.neonmaze.core.ReplaySystem;
 import com.neonmaze.core.ReplaySystem.ReplayMode;
 import com.neonmaze.core.ReplaySystem.ReplayTrace;
+import com.neonmaze.core.ReplaySystem.GhostTimeline;
 import com.neonmaze.core.ReplaySystem.RunResult;
 import com.neonmaze.core.ReplaySystem.TraceEvent;
 import com.neonmaze.core.ReplaySystem.TraceSample;
@@ -26,6 +32,7 @@ import java.util.List;
 public final class ResultScreen {
     public interface Actions {
         void onRetry();
+        void onRetrySave();
         void onNext();
         void onCampaign();
         void onHome();
@@ -37,25 +44,43 @@ public final class ResultScreen {
     private final GameEngine.RunOutcome outcome;
     private final boolean savePending;
     private final boolean saveFailed;
+    private final boolean saveRetryAvailable;
+    private final boolean saveSucceeded;
     private final boolean newBest;
     private final long previousBestMs;
     private final String nextLevelId;
+    @Nullable private final GhostTimeline ghostComparison;
     private final Actions actions;
 
     public ResultScreen(@NonNull Activity activity, @NonNull UiKit ui,
                         @NonNull LevelDefinition level,
                         @NonNull GameEngine.RunOutcome outcome,
-                        boolean savePending, boolean saveFailed, boolean newBest,
+                        boolean savePending, boolean saveFailed,
+                        boolean saveRetryAvailable, boolean saveSucceeded, boolean newBest,
                         long previousBestMs, String nextLevelId, Actions actions) {
+        this(activity, ui, level, outcome, savePending, saveFailed, saveRetryAvailable,
+                saveSucceeded, newBest, previousBestMs, nextLevelId, null, actions);
+    }
+
+    public ResultScreen(@NonNull Activity activity, @NonNull UiKit ui,
+                        @NonNull LevelDefinition level,
+                        @NonNull GameEngine.RunOutcome outcome,
+                        boolean savePending, boolean saveFailed,
+                        boolean saveRetryAvailable, boolean saveSucceeded, boolean newBest,
+                        long previousBestMs, String nextLevelId,
+                        @Nullable GhostTimeline ghostComparison, Actions actions) {
         this.activity = activity;
         this.ui = ui;
         this.level = level;
         this.outcome = outcome;
         this.savePending = savePending;
         this.saveFailed = saveFailed;
+        this.saveRetryAvailable = saveRetryAvailable;
+        this.saveSucceeded = saveSucceeded;
         this.newBest = newBest;
         this.previousBestMs = Math.max(0L, previousBestMs);
         this.nextLevelId = nextLevelId;
+        this.ghostComparison = ghostComparison;
         this.actions = actions;
     }
 
@@ -130,8 +155,16 @@ public final class ResultScreen {
             ui.addText(page, activity.getString(R.string.result_save_pending),
                     12, UiKit.AMBER, false, 12, 0);
         } else if (saveFailed) {
-            ui.addText(page, activity.getString(R.string.result_save_error),
+            ui.addText(page, activity.getString(saveRetryAvailable
+                            ? R.string.result_save_error : R.string.result_save_unavailable),
                     12, UiKit.CORAL, false, 12, 0);
+            if (saveRetryAvailable) {
+                ui.addButton(page, ui.button(activity.getString(R.string.result_save_retry),
+                        UiKit.ButtonStyle.PRIMARY, actions::onRetrySave), true);
+            }
+        } else if (saveSucceeded) {
+            ui.addText(page, activity.getString(R.string.result_save_success),
+                    12, UiKit.MINT, false, 12, 0);
         }
 
         View pathReview = buildPathReview();
@@ -147,10 +180,9 @@ public final class ResultScreen {
             ui.addButton(page, ui.button(activity.getString(R.string.result_next),
                     UiKit.ButtonStyle.PRIMARY, actions::onNext), true);
         }
-        if (!interrupted) {
-            ui.addButton(page, ui.button(activity.getString(R.string.result_retry),
-                    UiKit.ButtonStyle.SECONDARY, actions::onRetry), true);
-        }
+        ui.addButton(page, ui.button(activity.getString(interrupted
+                        ? R.string.result_restart_interrupted : R.string.result_retry),
+                UiKit.ButtonStyle.SECONDARY, actions::onRetry), true);
         ui.addButton(page, ui.button(activity.getString(R.string.result_campaign),
                 UiKit.ButtonStyle.QUIET, actions::onCampaign), true);
         ui.addButton(page, ui.button(activity.getString(R.string.result_home),
@@ -172,29 +204,53 @@ public final class ResultScreen {
     @Nullable
     private View buildPathReview() {
         ReplayTrace trace = outcome.trace();
-        if (trace == null || trace.result() != RunResult.FAILED) return null;
-        long failureTime = -1L;
-        for (TraceEvent event : trace.events()) {
-            if ("FAIL".equals(event.type())) { failureTime = event.tMs(); break; }
+        if (trace == null) return null;
+        if (trace.checkCompatibility(level) != ReplaySystem.Compatibility.AVAILABLE) {
+            TextView unavailable = ui.text(
+                    activity.getString(R.string.result_replay_incompatible),
+                    12, UiKit.AMBER, false);
+            unavailable.setPadding(ui.dp(12), ui.dp(12), ui.dp(12), ui.dp(12));
+            unavailable.setContentDescription(activity.getString(R.string.result_replay_incompatible));
+            return unavailable;
         }
-        if (failureTime < 0L) return null;
-        ReplaySystem.PathReview review = ReplaySystem.PathReview.from(trace,
-                failureTime, 3_000L, 1_500L);
-        if (review == null || review.window().size() < 2) return null;
-        return new ReviewMiniMap(activity, ui, level, review.window());
+        List<TraceSample> samples = boundedReviewSamples(trace.samples(), 1_400);
+        long failureTime = -1L;
+        if (trace.result() == RunResult.FAILED) {
+            for (TraceEvent event : trace.events()) {
+                if ("FAIL".equals(event.type())) { failureTime = event.tMs(); break; }
+            }
+            if (failureTime >= 0L) {
+                ReplaySystem.PathReview review = ReplaySystem.PathReview.from(trace,
+                        failureTime, 3_000L, 1_500L);
+                if (review != null && review.window().size() >= 2)
+                    samples = boundedReviewSamples(review.window(), 1_400);
+            }
+        }
+        if (samples == null || samples.size() < 2) return null;
+        return new ReplayPlaybackPanel(activity, ui, level, samples, failureTime,
+                outcome.mode() == ReplayMode.GHOST_RACE ? ghostComparison : null);
+    }
+
+    /** At most 1,400 visual samples are kept by the UI; stored Replay remains untouched. */
+    private static List<TraceSample> boundedReviewSamples(List<TraceSample> source, int maximum) {
+        if (source.size() <= maximum) return source;
+        java.util.ArrayList<TraceSample> result = new java.util.ArrayList<>(maximum);
+        int last = source.size() - 1;
+        for (int i = 0; i < maximum; i++) {
+            int index = (int) Math.round((double) i * last / (maximum - 1));
+            TraceSample sample = source.get(index);
+            if (result.isEmpty() || result.get(result.size() - 1).tMs() != sample.tMs()) {
+                result.add(sample);
+            }
+        }
+        if (result.get(result.size() - 1) != source.get(last)) result.add(source.get(last));
+        return java.util.Collections.unmodifiableList(result);
     }
 
     private String levelTitle() {
-        int[] names = {R.string.level_01_name, R.string.level_02_name,
-                R.string.level_03_name, R.string.level_04_name, R.string.level_05_name};
-        // IDs are a stable ordered Campaign contract; Tutorial is handled separately.
-        String id = level.levelId();
-        if (id.endsWith("awakening")) return activity.getString(names[0]);
-        if (id.endsWith("precision-core")) return activity.getString(names[1]);
-        if (id.endsWith("pulse-reactor")) return activity.getString(names[2]);
-        if (id.endsWith("energy-vault")) return activity.getString(names[3]);
-        if (id.endsWith("the-core")) return activity.getString(names[4]);
-        return id;
+        int id = activity.getResources().getIdentifier(level.displayNameKey(), "string",
+                activity.getPackageName());
+        return id == 0 ? level.levelId() : activity.getString(id);
     }
 
     private static int failureString(GameEngine.FailureReason reason) {
@@ -209,11 +265,174 @@ public final class ResultScreen {
         return value.toString();
     }
 
-    /** Small, cached failure trace preview; it never changes collision geometry. */
+    /** Lifecycle-bound trace player with deterministic scrub/speed and no physics replay. */
+    private static final class ReplayPlaybackPanel extends LinearLayout
+            implements View.OnAttachStateChangeListener {
+        private final Handler handler = new Handler(Looper.getMainLooper());
+        private final List<TraceSample> samples;
+        private final long startMs;
+        private final long endMs;
+        private final ReviewMiniMap map;
+        private final SeekBar seekBar;
+        private final TextView positionLabel;
+        private final TextView speedLabel;
+        private final android.widget.Button playButton;
+        private final double[] speeds = {0.5d, 1.0d, 2.0d};
+        private int speedIndex = 1;
+        private long currentMs;
+        private long lastFrameUptime;
+        private boolean playing;
+        private boolean attached;
+        private boolean updatingSeek;
+
+        private final Runnable tick;
+
+        private final Activity activity;
+        private final UiKit ui;
+
+        ReplayPlaybackPanel(Activity activity, UiKit ui, LevelDefinition level,
+                            List<TraceSample> samples, long failureTime,
+                            @Nullable GhostTimeline ghostComparison) {
+            super(activity);
+            this.activity = activity;
+            this.ui = ui;
+            this.samples = samples;
+            this.startMs = samples.get(0).tMs();
+            this.endMs = samples.get(samples.size() - 1).tMs();
+            this.currentMs = startMs;
+            setOrientation(VERTICAL);
+            setPadding(ui.dp(10), ui.dp(10), ui.dp(10), ui.dp(8));
+            map = new ReviewMiniMap(activity, ui, level, samples, failureTime, ghostComparison);
+            addView(map, new LayoutParams(LayoutParams.MATCH_PARENT, ui.dp(184)));
+            if (ghostComparison != null) {
+                TextView legend = ui.text(activity.getString(R.string.replay_ghost_legend),
+                        10, UiKit.VIOLET, true);
+                addView(legend, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            }
+
+            LinearLayout playbackRow = ui.row();
+            playButton = ui.button(activity.getString(R.string.replay_play),
+                    UiKit.ButtonStyle.SECONDARY, this::togglePlayback);
+            tick = this::tickPlaybackFrame;
+            playbackRow.addView(playButton, new LayoutParams(0, ui.dp(48), 1f));
+            android.widget.Button speedButton = ui.button(
+                    activity.getString(R.string.replay_speed, speedText()),
+                    UiKit.ButtonStyle.QUIET, () -> cycleSpeed());
+            playbackRow.addView(speedButton, new LayoutParams(0, ui.dp(48), 1f));
+            playbackRow.setTag(speedButton);
+            addView(playbackRow, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+            seekBar = new SeekBar(activity);
+            seekBar.setMax(1000);
+            seekBar.setContentDescription(activity.getString(R.string.replay_position,
+                    ui.formatTime(startMs), ui.formatTime(endMs)));
+            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                    if (!fromUser || updatingSeek) return;
+                    long target = startMs + Math.round((endMs - startMs) * (progress / 1000d));
+                    setPosition(target);
+                }
+                @Override public void onStartTrackingTouch(SeekBar bar) {
+                    pausePlayback();
+                }
+                @Override public void onStopTrackingTouch(SeekBar bar) { }
+            });
+            addView(seekBar, new LayoutParams(LayoutParams.MATCH_PARENT, ui.dp(48)));
+            LinearLayout footer = ui.row();
+            positionLabel = ui.text("", 10, UiKit.TEXT_SECONDARY, true);
+            speedLabel = ui.text(activity.getString(R.string.replay_speed, speedText()),
+                    10, UiKit.TEXT_SECONDARY, false);
+            footer.addView(positionLabel, new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+            footer.addView(speedLabel, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+            addView(footer, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            speedButton.setOnClickListener(v -> {
+                cycleSpeed();
+                speedButton.setText(activity.getString(R.string.replay_speed, speedText()));
+            });
+            setPosition(startMs);
+            addOnAttachStateChangeListener(this);
+        }
+
+        private String activityLabel(int id) { return activity.getString(id); }
+
+        private String speedText() {
+            return speeds[speedIndex] == 1.0d ? "1×"
+                    : speeds[speedIndex] == 0.5d ? "0.5×" : "2×";
+        }
+
+        private void cycleSpeed() {
+            speedIndex = (speedIndex + 1) % speeds.length;
+            speedLabel.setText(activity.getString(R.string.replay_speed, speedText()));
+        }
+
+        private void togglePlayback() {
+            if (playing) pausePlayback();
+            else {
+                if (currentMs >= endMs) setPosition(startMs);
+                playing = true;
+                lastFrameUptime = SystemClock.uptimeMillis();
+                playButton.setText(activityLabel(R.string.replay_pause));
+                handler.removeCallbacks(tick);
+                if (attached) handler.postDelayed(tick, 33L);
+            }
+        }
+
+        private void tickPlaybackFrame() {
+            if (!attached || !playing) return;
+            long now = SystemClock.uptimeMillis();
+            long delta = Math.max(0L, Math.min(100L, now - lastFrameUptime));
+            lastFrameUptime = now;
+            long advance = Math.round(delta * speeds[speedIndex]);
+            setPosition(Math.min(endMs, currentMs + advance));
+            if (currentMs >= endMs) {
+                playing = false;
+                playButton.setText(activityLabel(R.string.replay_play));
+            } else {
+                handler.postDelayed(tick, 33L);
+            }
+        }
+
+        private void pausePlayback() {
+            playing = false;
+            handler.removeCallbacks(tick);
+            playButton.setText(activityLabel(R.string.replay_play));
+        }
+
+        private void setPosition(long position) {
+            currentMs = Math.max(startMs, Math.min(endMs, position));
+            map.setPlaybackTime(currentMs);
+            positionLabel.setText(activity.getString(R.string.replay_position,
+                    ui.formatTime(currentMs), ui.formatTime(endMs)));
+            updatingSeek = true;
+            int progress = endMs <= startMs ? 0 : (int) Math.round(
+                    (currentMs - startMs) * 1000d / (endMs - startMs));
+            seekBar.setProgress(Math.max(0, Math.min(1000, progress)));
+            seekBar.setContentDescription(activity.getString(R.string.replay_position,
+                    ui.formatTime(currentMs), ui.formatTime(endMs)));
+            updatingSeek = false;
+        }
+
+        @Override public void onViewAttachedToWindow(View view) {
+            attached = true;
+            if (playing) {
+                lastFrameUptime = SystemClock.uptimeMillis();
+                handler.removeCallbacks(tick);
+                handler.postDelayed(tick, 33L);
+            }
+        }
+
+        @Override public void onViewDetachedFromWindow(View view) {
+            attached = false;
+            handler.removeCallbacks(tick);
+        }
+    }
+
+    /** Cached level geometry with a playback cursor; it never replays physics/collision. */
     private static final class ReviewMiniMap extends View {
         private final UiKit ui;
         private final LevelDefinition level;
         private final List<TraceSample> samples;
+        private final long failureTime;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Path outerPath = new Path();
         private final Path holesPath = new Path();
@@ -221,19 +440,42 @@ public final class ResultScreen {
         private final Path goalPath = new Path();
         private final Path safePath = new Path();
         private final Path tracePath = new Path();
+        private final Path playedPath = new Path();
+        private final Path ghostPath = new Path();
+        @Nullable private final GhostTimeline ghostComparison;
+        private final double[] ghostScratch = new double[2];
+        private final float[] failurePointScratch = new float[2];
+        private final float[] markerPointScratch = new float[2];
         private float contentLeft;
         private float contentTop;
         private double scale = 1.0;
+        private long playbackTime;
+        private float markerX;
+        private float markerY;
+        private float failureX;
+        private float failureY;
+        private boolean hasFailurePoint;
 
         ReviewMiniMap(Activity activity, UiKit ui, LevelDefinition level,
-                      List<TraceSample> samples) {
+                      List<TraceSample> samples, long failureTime,
+                      @Nullable GhostTimeline ghostComparison) {
             super(activity);
             this.ui = ui;
             this.level = level;
             this.samples = samples;
+            this.failureTime = failureTime;
+            this.ghostComparison = ghostComparison;
+            this.playbackTime = samples.get(0).tMs();
             setContentDescription(activity.getString(R.string.result_path_review));
             setFocusable(true);
             setMinimumHeight(ui.dp(184));
+        }
+
+        void setPlaybackTime(long timeMs) {
+            playbackTime = Math.max(samples.get(0).tMs(),
+                    Math.min(samples.get(samples.size() - 1).tMs(), timeMs));
+            rebuildPlayedPath();
+            invalidate();
         }
 
         @Override protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
@@ -242,12 +484,8 @@ public final class ResultScreen {
         }
 
         private void rebuildPaths(int width, int height) {
-            outerPath.reset();
-            holesPath.reset();
-            startPath.reset();
-            goalPath.reset();
-            safePath.reset();
-            tracePath.reset();
+            outerPath.reset(); holesPath.reset(); startPath.reset(); goalPath.reset();
+            safePath.reset(); tracePath.reset(); playedPath.reset(); ghostPath.reset();
             com.neonmaze.core.GeometryCollision.Aabb bounds = level.worldBounds();
             float pad = ui.dp(18);
             float availableWidth = Math.max(1f, width - pad * 2f);
@@ -259,24 +497,71 @@ public final class ResultScreen {
             double drawnHeight = (bounds.maxY() - bounds.minY()) * scale;
             contentLeft = pad + (float) ((availableWidth - drawnWidth) * .5);
             contentTop = pad + (float) ((availableHeight - drawnHeight) * .5);
-
             appendPolygon(outerPath, level.outerBoundary(), bounds);
-            for (List<com.neonmaze.core.GeometryCollision.Vec2> hole : level.holeBoundaries()) {
+            for (List<com.neonmaze.core.GeometryCollision.Vec2> hole : level.holeBoundaries())
                 appendPolygon(holesPath, hole, bounds);
-            }
             appendZone(startPath, level.startZone(), bounds);
             appendZone(goalPath, level.goalZone(), bounds);
-            for (com.neonmaze.core.LevelSystem.Zone safe : level.safeZones()) {
+            for (com.neonmaze.core.LevelSystem.Zone safe : level.safeZones())
                 appendZone(safePath, safe, bounds);
-            }
-            TraceSample previous = null;
+            boolean firstSample = true;
             for (TraceSample sample : samples) {
-                float x = screenX(sample.x(), bounds);
-                float y = screenY(sample.y(), bounds);
-                if (previous == null) tracePath.moveTo(x, y);
-                else tracePath.lineTo(x, y);
-                previous = sample;
+                float sampleX = screenX(sample.x(), bounds);
+                float sampleY = screenY(sample.y(), bounds);
+                if (firstSample) { tracePath.moveTo(sampleX, sampleY); firstSample = false; }
+                else tracePath.lineTo(sampleX, sampleY);
             }
+            if (ghostComparison != null) {
+                long duration = ghostComparison.durationMs();
+                int points = (int) Math.max(2L, Math.min(480L, duration / 40L + 1L));
+                for (int i = 0; i < points; i++) {
+                    long t = points <= 1 ? 0L : Math.round((double) duration * i / (points - 1));
+                    ghostComparison.positionAt(t, ghostScratch);
+                    float gx = screenX(ghostScratch[0], bounds);
+                    float gy = screenY(ghostScratch[1], bounds);
+                    if (i == 0) ghostPath.moveTo(gx, gy); else ghostPath.lineTo(gx, gy);
+                }
+            }
+            hasFailurePoint = failureTime >= samples.get(0).tMs()
+                    && failureTime <= samples.get(samples.size() - 1).tMs();
+            if (hasFailurePoint) {
+                positionAt(failureTime, bounds, failurePointScratch);
+                failureX = failurePointScratch[0]; failureY = failurePointScratch[1];
+            }
+            rebuildPlayedPath();
+        }
+
+        private void rebuildPlayedPath() {
+            playedPath.reset();
+            if (getWidth() <= 0 || samples.isEmpty()) return;
+            com.neonmaze.core.GeometryCollision.Aabb bounds = level.worldBounds();
+            boolean started = false;
+            for (int i = 0; i < samples.size(); i++) {
+                TraceSample sample = samples.get(i);
+                if (sample.tMs() > playbackTime) break;
+                float x = screenX(sample.x(), bounds), y = screenY(sample.y(), bounds);
+                if (!started) { playedPath.moveTo(x, y); started = true; }
+                else playedPath.lineTo(x, y);
+            }
+            positionAt(playbackTime, bounds, markerPointScratch);
+            markerX = markerPointScratch[0]; markerY = markerPointScratch[1];
+            if (started) playedPath.lineTo(markerX, markerY);
+            if (!started) playedPath.moveTo(markerX, markerY);
+        }
+
+        private void positionAt(long timeMs,
+                com.neonmaze.core.GeometryCollision.Aabb bounds, float[] output) {
+            TraceSample a = samples.get(0), b = samples.get(samples.size() - 1);
+            for (int i = 1; i < samples.size(); i++) {
+                TraceSample candidate = samples.get(i);
+                if (candidate.tMs() >= timeMs) { a = samples.get(i - 1); b = candidate; break; }
+            }
+            double span = b.tMs() - a.tMs();
+            double alpha = span <= 0L ? 0d : (timeMs - a.tMs()) / span;
+            double x = a.x() + (b.x() - a.x()) * alpha;
+            double y = a.y() + (b.y() - a.y()) * alpha;
+            output[0] = screenX(x, bounds);
+            output[1] = screenY(y, bounds);
         }
 
         private void appendPolygon(Path target,
@@ -285,8 +570,7 @@ public final class ResultScreen {
             if (points == null || points.size() < 3) return;
             for (int i = 0; i < points.size(); i++) {
                 com.neonmaze.core.GeometryCollision.Vec2 point = points.get(i);
-                float x = screenX(point.x(), bounds);
-                float y = screenY(point.y(), bounds);
+                float x = screenX(point.x(), bounds), y = screenY(point.y(), bounds);
                 if (i == 0) target.moveTo(x, y); else target.lineTo(x, y);
             }
             target.close();
@@ -297,9 +581,7 @@ public final class ResultScreen {
             if (zone.shape() == com.neonmaze.core.LevelSystem.ZoneShape.CIRCLE) {
                 target.addCircle(screenX(zone.cx(), bounds), screenY(zone.cy(), bounds),
                         (float) (zone.radius() * scale), Path.Direction.CW);
-            } else {
-                appendPolygon(target, zone.polygon(), bounds);
-            }
+            } else appendPolygon(target, zone.polygon(), bounds);
         }
 
         private float screenX(double worldX,
@@ -315,42 +597,29 @@ public final class ResultScreen {
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             paint.setStyle(Paint.Style.FILL);
-            paint.setColor(UiKit.SURFACE_ELEVATED);
-            canvas.drawPath(outerPath, paint);
-
-            paint.setColor(UiKit.BACKGROUND);
-            canvas.drawPath(holesPath, paint);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(ui.dp(1.5f));
-            paint.setColor(UiKit.BORDER);
-            canvas.drawPath(outerPath, paint);
-            canvas.drawPath(holesPath, paint);
-
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(ui.dp(2f));
-            paint.setColor(UiKit.MINT);
-            canvas.drawPath(startPath, paint);
-            paint.setColor(UiKit.VIOLET);
-            canvas.drawPath(goalPath, paint);
-            paint.setColor(UiKit.AMBER);
-            paint.setStrokeWidth(ui.dp(1.5f));
-            canvas.drawPath(safePath, paint);
-
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(ui.dp(3f));
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setStrokeJoin(Paint.Join.ROUND);
-            paint.setColor(UiKit.MINT);
+            paint.setColor(UiKit.SURFACE_ELEVATED); canvas.drawPath(outerPath, paint);
+            paint.setColor(UiKit.BACKGROUND); canvas.drawPath(holesPath, paint);
+            paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(ui.dp(1.5f));
+            paint.setColor(UiKit.BORDER); canvas.drawPath(outerPath, paint); canvas.drawPath(holesPath, paint);
+            paint.setStrokeWidth(ui.dp(2f)); paint.setColor(UiKit.MINT); canvas.drawPath(startPath, paint);
+            paint.setColor(UiKit.VIOLET); canvas.drawPath(goalPath, paint);
+            paint.setColor(UiKit.AMBER); paint.setStrokeWidth(ui.dp(1.5f)); canvas.drawPath(safePath, paint);
+            paint.setStrokeCap(Paint.Cap.ROUND); paint.setStrokeJoin(Paint.Join.ROUND);
+            paint.setStrokeWidth(ui.dp(2.5f)); paint.setColor(UiKit.TEXT_SECONDARY); paint.setAlpha(90);
             canvas.drawPath(tracePath, paint);
-
-            if (!samples.isEmpty()) {
-                TraceSample last = samples.get(samples.size() - 1);
-                com.neonmaze.core.GeometryCollision.Aabb bounds = level.worldBounds();
-                paint.setStyle(Paint.Style.FILL);
+            if (ghostComparison != null) {
+                paint.setAlpha(175); paint.setStrokeWidth(ui.dp(2.2f)); paint.setColor(UiKit.VIOLET);
+                canvas.drawPath(ghostPath, paint);
+            }
+            paint.setAlpha(255); paint.setStrokeWidth(ui.dp(3.2f)); paint.setColor(UiKit.MINT);
+            canvas.drawPath(playedPath, paint);
+            paint.setStyle(Paint.Style.FILL); paint.setColor(UiKit.MINT);
+            canvas.drawCircle(markerX, markerY, ui.dp(5), paint);
+            if (hasFailurePoint) {
                 paint.setColor(UiKit.CORAL);
-                canvas.drawCircle(screenX(last.x(), bounds), screenY(last.y(), bounds),
-                        ui.dp(5), paint);
+                canvas.drawCircle(failureX, failureY, ui.dp(5), paint);
             }
         }
     }
+
 }

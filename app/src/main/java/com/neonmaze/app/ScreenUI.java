@@ -23,7 +23,7 @@ import com.neonmaze.core.ReplaySystem.GhostTimeline;
 import com.neonmaze.core.ReplaySystem.ReplayMode;
 import com.neonmaze.core.ReplaySystem.ReplayTrace;
 import com.neonmaze.core.ReplaySystem.RunResult;
-import com.neonmaze.core.levels.Level01;
+import com.neonmaze.core.levels.Level04;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,6 +46,7 @@ public final class ScreenUI extends FrameLayout {
     private final ArrayList<Route> backStack = new ArrayList<>();
 
     private LocalStore.Settings settings;
+    private LocalStore.CosmeticLoadout cosmeticLoadout;
     private Map<String, LocalStore.LevelProgress> levelProgress = new HashMap<>();
     private List<LocalStore.Achievement> achievementRows = new ArrayList<>();
     @Nullable private LocalStore.Profile profile;
@@ -76,6 +77,7 @@ public final class ScreenUI extends FrameLayout {
     @Nullable private GameEngine.RunOutcome pendingOutcome;
     @Nullable private GameEngine.RunOutcome resultOutcome;
     @Nullable private LocalStore.RecordRunResult runSaveResult;
+    @Nullable private LocalStore.RunRecordInput pendingRunSaveInput;
     private boolean resultSavePending;
     private boolean resultSaveFailed;
     private boolean resultNewBest;
@@ -84,6 +86,7 @@ public final class ScreenUI extends FrameLayout {
     private boolean tutorialNeedsResumeRender;
     private boolean disposed;
     private boolean discardOutcome;
+    private boolean exitConfirmationShowing;
     private boolean transitionPending;
     private boolean tutorialRunning;
     private boolean tutorialComplete;
@@ -114,6 +117,7 @@ public final class ScreenUI extends FrameLayout {
         this.requestPhotoPicker = requestPhotoPicker;
         this.recreateActivity = recreateActivity;
         this.settings = store.loadSettings();
+        this.cosmeticLoadout = store.loadCosmeticLoadout();
         this.dailySelection = DailyChallenge.forTimestamp(
                 System.currentTimeMillis(), ReplaySystem.GAME_RULES_VERSION, catalog);
         // Progress is asynchronous: do not select or expose a level until its saved unlock state is read.
@@ -286,7 +290,7 @@ public final class ScreenUI extends FrameLayout {
                 screen = new ProfileScreen(activity, ui, profile, levelProgress,
                         achievementRows, profileEditing, pendingPhotoPath, selectedAvatar,
                         profileLoading, profileLoadFailed, photoImportPending, dataLoading, storeError,
-                        achievementsLoading || achievementsLoadFailed,
+                        achievementsLoading || achievementsLoadFailed, cosmeticLoadout,
                         new ProfileScreen.Actions() {
                     @Override public void onEdit() {
                         if (profileLoading || profileLoadFailed) { toast(R.string.nav_loading); return; }
@@ -351,8 +355,15 @@ public final class ScreenUI extends FrameLayout {
                 break;
             case ACHIEVEMENTS:
                 screen = new AchievementsScreen(activity, ui, achievementRows, levelProgress,
-                        achievementsLoading, achievementsLoadFailed,
-                        this::refreshAchievements, this::onBackPressed).create();
+                        achievementsLoading, achievementsLoadFailed, catalog, cosmeticLoadout,
+                        new AchievementsScreen.Actions() {
+                    @Override public void onRetry() { refreshAchievements(); }
+                    @Override public void onBack() { onBackPressed(); }
+                    @Override public void onEquipCosmetic(String cosmeticId) {
+                        equipCosmetic(cosmeticId);
+                    }
+                    @Override public void onUnequipEmblem() { unequipEmblem(); }
+                }).create();
                 break;
             case GAME:
                 screen = gameView == null ? new View(activity) : gameView;
@@ -383,7 +394,9 @@ public final class ScreenUI extends FrameLayout {
     private View buildHomeScreen(UiKit ui) {
         int completed = 0, attempts = 0, completions = 0;
         boolean any = false;
-        for (LocalStore.LevelProgress row : levelProgress.values()) {
+        for (LevelDefinition catalogLevel : catalog.all()) {
+            LocalStore.LevelProgress row = levelProgress.get(catalogLevel.levelId());
+            if (row == null) continue;
             if (row.completed) completed++;
             attempts += row.attempts;
             completions += row.completions;
@@ -393,7 +406,7 @@ public final class ScreenUI extends FrameLayout {
         String name = profile == null || profile.displayName == null
                 || profile.displayName.trim().isEmpty()
                 ? activity.getString(R.string.profile_default_name) : profile.displayName;
-        return new HomeScreen(activity, ui, completed, attempts, completions,
+        return new HomeScreen(activity, ui, completed, catalog.size(), attempts, completions,
                 any, allComplete, name,
                 profile != null && profile.displayName != null && !profile.displayName.trim().isEmpty(),
                 profileLoading, profileLoadFailed, dailySelection, dailyRecord,
@@ -418,6 +431,59 @@ public final class ScreenUI extends FrameLayout {
         }).create();
     }
 
+    private void equipCosmetic(@NonNull String cosmeticId) {
+        if (achievementsLoading || achievementsLoadFailed) return;
+        ProgressRules.CosmeticDef selected = null;
+        for (ProgressRules.CosmeticDef definition : ProgressRules.cosmetics()) {
+            if (definition.id().equals(cosmeticId)) { selected = definition; break; }
+        }
+        if (selected == null) return;
+        boolean unlocked = selected.defaultUnlocked();
+        if (!unlocked && !selected.achievementId().isEmpty()) {
+            for (LocalStore.Achievement row : achievementRows) {
+                if (selected.achievementId().equals(row.achievementId) && row.unlockedAt != null) {
+                    unlocked = true; break;
+                }
+            }
+        } else if (!unlocked && selected.completionsNeeded() > 0) {
+            int completions = 0;
+            for (LevelDefinition level : catalog.all()) {
+                LocalStore.LevelProgress row = levelProgress.get(level.levelId());
+                if (row != null) completions += Math.max(0, row.completions);
+            }
+            unlocked = completions >= selected.completionsNeeded();
+        }
+        if (!unlocked) { toast(R.string.achievements_cosmetic_locked); return; }
+        String trail = cosmeticLoadout.trailId;
+        String frame = cosmeticLoadout.frameId;
+        String emblem = cosmeticLoadout.emblemId;
+        if (selected.kind() == ProgressRules.COSMETIC_TRAIL) trail = selected.id();
+        else if (selected.kind() == ProgressRules.COSMETIC_FRAME) frame = selected.id();
+        else if (selected.kind() == ProgressRules.COSMETIC_EMBLEM) emblem = selected.id();
+        LocalStore.CosmeticLoadout next = new LocalStore.CosmeticLoadout(trail, frame, emblem);
+        try {
+            store.saveCosmeticLoadout(next);
+            cosmeticLoadout = next;
+            if (gameView != null) gameView.setCosmeticLoadout(next);
+            render();
+        } catch (IllegalArgumentException invalid) {
+            toast(R.string.common_error_catalog);
+        }
+    }
+
+    private void unequipEmblem() {
+        LocalStore.CosmeticLoadout next = new LocalStore.CosmeticLoadout(
+                cosmeticLoadout.trailId, cosmeticLoadout.frameId, "");
+        try {
+            store.saveCosmeticLoadout(next);
+            cosmeticLoadout = next;
+            if (gameView != null) gameView.setCosmeticLoadout(next);
+            render();
+        } catch (IllegalArgumentException invalid) {
+            toast(R.string.common_error_catalog);
+        }
+    }
+
     private View buildResultScreen(UiKit ui) {
         if (resultOutcome == null || activeLevel == null) {
             return errorPage(ui, R.string.nav_error);
@@ -433,8 +499,11 @@ public final class ScreenUI extends FrameLayout {
         }
         final String next = nextId;
         return new ResultScreen(activity, ui, activeLevel, resultOutcome,
-                resultSavePending, resultSaveFailed, resultNewBest, resultPreviousBestMs, next,
+                resultSavePending, resultSaveFailed, pendingRunSaveInput != null,
+                runSaveResult != null, resultNewBest, resultPreviousBestMs, next,
+                activeMode == ReplayMode.GHOST_RACE ? ghostTimeline : null,
                 new ResultScreen.Actions() {
+            @Override public void onRetrySave() { retryPendingRunSave(); }
             @Override public void onRetry() {
                 if (activeLevel != null && activeMode != null) {
                     replace(Route.GAME);
@@ -470,6 +539,11 @@ public final class ScreenUI extends FrameLayout {
 
     private void startRun(@NonNull LevelDefinition level, @NonNull ReplayMode mode,
                           @Nullable String dailyId, @Nullable GhostTimeline ghost) {
+        if (pendingRunSaveInput != null) {
+            toast(R.string.result_save_retry_first);
+            openResultRoute();
+            return;
+        }
         if (mode == ReplayMode.DAILY_CHALLENGE) {
             if (dailyLoading || dailyLoadFailed || dailySelection == null
                     || dailyId == null || !dailySelection.challengeId().equals(dailyId)
@@ -492,7 +566,8 @@ public final class ScreenUI extends FrameLayout {
             GameEngine engine = new GameEngine(level, mode, System.currentTimeMillis());
             GameView view = new GameView(activity);
             view.setLeftHanded(settings.leftHandedUi);
-            view.setVisualOptions(settings.reducedEffects, settings.highContrast);
+            view.setVisualOptions(settings.reducedMotion, settings.reducedEffects, settings.highContrast);
+            view.setCosmeticLoadout(cosmeticLoadout);
             view.setEngine(engine, level, feedback);
             if (ghost != null) view.setGhost(ghost);
             attachGameListener(view, level, mode, dailyId);
@@ -505,6 +580,7 @@ public final class ScreenUI extends FrameLayout {
             this.ghostTimeline = ghost;
             this.resultOutcome = null;
             this.runSaveResult = null;
+            this.pendingRunSaveInput = null;
             this.resultSavePending = false;
             this.resultSaveFailed = false;
             this.resultNewBest = false;
@@ -532,7 +608,12 @@ public final class ScreenUI extends FrameLayout {
             @Override public void onRunOutcome(GameEngine.RunOutcome outcome) {
                 handleRunOutcome(level, mode, dailyId, outcome);
             }
-            @Override public void onPauseRequested() { showPauseDialog(); }
+            @Override public void onPauseRequested() {
+                // The in-game HUD owns the paused presentation and resume guidance.
+                // Resume itself remains the Engine's marker-touch gesture.
+            }
+            @Override public void onRestartRequested() { restartCurrentRun(); }
+            @Override public void onExitRequested() { requestGameExitFromHud(); }
         });
     }
 
@@ -578,14 +659,14 @@ public final class ScreenUI extends FrameLayout {
         this.resultSavePending = shouldPersist(mode, outcome);
         this.resultSaveFailed = false;
         this.runSaveResult = null;
+        this.pendingRunSaveInput = null;
         if (!resultSavePending) {
             openResultRoute();
             return;
         }
         String runId = UUID.randomUUID().toString();
-        LocalStore.RunRecordInput input;
         try {
-            input = LocalStore.RunRecordInput.fromOutcome(catalog, runId,
+            pendingRunSaveInput = LocalStore.RunRecordInput.fromOutcome(catalog, runId,
                     level, outcome, null, dailyId);
         } catch (RuntimeException invalidOutcome) {
             resultSavePending = false;
@@ -594,22 +675,38 @@ public final class ScreenUI extends FrameLayout {
             return;
         }
         openResultRoute();
+        submitPendingRunSave();
+    }
+
+    /** Submits the exact immutable result payload; retries preserve its original runId. */
+    private void submitPendingRunSave() {
+        LocalStore.RunRecordInput input = pendingRunSaveInput;
+        if (input == null || destroyed()) return;
+        resultSavePending = true;
+        resultSaveFailed = false;
+        renderIfShowingResult();
         store.recordRun(input, new LocalStore.Callback<LocalStore.RecordRunResult>() {
             @Override public void onResult(LocalStore.RecordRunResult result) {
-                if (destroyed()) return;
+                if (destroyed() || pendingRunSaveInput != input) return;
                 runSaveResult = result;
+                pendingRunSaveInput = null;
                 resultSavePending = false;
                 resultSaveFailed = false;
                 refreshData();
                 renderIfShowingResult();
             }
             @Override public void onError(Exception error) {
-                if (destroyed()) return;
+                if (destroyed() || pendingRunSaveInput != input) return;
                 resultSavePending = false;
                 resultSaveFailed = true;
                 renderIfShowingResult();
             }
         });
+    }
+
+    private void retryPendingRunSave() {
+        if (pendingRunSaveInput == null || resultSavePending) return;
+        submitPendingRunSave();
     }
 
     private static boolean shouldPersist(ReplayMode mode, GameEngine.RunOutcome outcome) {
@@ -632,6 +729,7 @@ public final class ScreenUI extends FrameLayout {
         pendingOutcome = null;
         resultSavePending = false;
         resultSaveFailed = false;
+        pendingRunSaveInput = null;
         resultNewBest = false;
         resultPreviousBestMs = 0L;
         runSaveResult = null;
@@ -651,19 +749,6 @@ public final class ScreenUI extends FrameLayout {
                 || outcome.elapsedMs() < previous.bestTimeMs;
     }
 
-    private void showPauseDialog() {
-        if (gameEngine == null || gameEngine.getState() != GameEngine.EngineState.PAUSED) return;
-        new AlertDialog.Builder(activity)
-                .setTitle(R.string.gameplay_pause)
-                .setMessage(R.string.game_pause_instruction)
-                .setPositiveButton(R.string.game_resume_touch, (dialog, which) -> {
-                    toast(R.string.game_resume_touch);
-                })
-                .setNeutralButton(R.string.game_restart, (dialog, which) -> restartCurrentRun())
-                .setNegativeButton(R.string.game_exit, (dialog, which) -> confirmGameExit())
-                .show();
-    }
-
     private void requestGameExitOrPause() {
         if (gameEngine == null || gameView == null) { goHome(); return; }
         ReplayMode mode = gameEngine.getMode();
@@ -671,7 +756,7 @@ public final class ScreenUI extends FrameLayout {
         if (pauseAllowed && gameEngine.getState() == GameEngine.EngineState.RUNNING) {
             gameView.onPauseRequested();
         } else if (gameEngine.getState() == GameEngine.EngineState.PAUSED) {
-            showPauseDialog();
+            confirmGameExit();
         } else {
             confirmGameExit();
         }
@@ -691,28 +776,41 @@ public final class ScreenUI extends FrameLayout {
         render();
     }
 
+    private void requestGameExitFromHud() {
+        if (gameEngine == null || gameView == null) return;
+        if (activeMode == ReplayMode.TUTORIAL
+                || (currentRoute() == Route.TUTORIAL && tutorialRunning)) {
+            showTutorialExitConfirmation();
+        } else {
+            confirmGameExit();
+        }
+    }
+
     private void confirmGameExit() {
-        new AlertDialog.Builder(activity)
+        if (exitConfirmationShowing) return;
+        AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle(R.string.game_exit_title)
                 .setMessage(R.string.game_exit_confirm)
-                .setNegativeButton(R.string.common_cancel, null)
-                .setPositiveButton(R.string.game_exit, (dialog, which) -> {
+                .setNegativeButton(R.string.game_exit_continue, null)
+                .setPositiveButton(R.string.game_exit, (ignored, which) -> {
                     discardOutcome = true;
-                    if (gameView != null) gameView.setListener(null);
                     if (gameEngine != null) gameEngine.interrupt("user-exit");
-                    if (gameView != null) gameView.onInputChanged();
-                    gameView = null;
+                    // Release the frame callback and active pointer immediately, not only on detach.
+                    releaseGameView();
                     gameEngine = null;
                     if (backStack.contains(Route.GAME)) backStack.remove(Route.GAME);
                     if (backStack.isEmpty()) backStack.add(Route.HOME);
                     render();
-                }).show();
+                }).create();
+        exitConfirmationShowing = true;
+        dialog.setOnDismissListener(ignored -> exitConfirmationShowing = false);
+        dialog.show();
     }
 
     private void applySettingsToGame() {
         if (gameView != null) {
             gameView.setLeftHanded(settings.leftHandedUi);
-            gameView.setVisualOptions(settings.reducedEffects, settings.highContrast);
+            gameView.setVisualOptions(settings.reducedMotion, settings.reducedEffects, settings.highContrast);
         }
     }
 
@@ -743,25 +841,9 @@ public final class ScreenUI extends FrameLayout {
 
     private void startTutorial() {
         try {
-            LevelDefinition base = Level01.build();
-            LevelDefinition tutorialLevel = new LevelDefinition.Builder()
-                    .levelId("tutorial-00")
-                    .levelRevision(base.levelRevision())
-                    .displayNameKey("tutorial_level")
-                    .worldBounds(base.worldBounds())
-                    .outerBoundary(base.outerBoundary())
-                    .holeBoundaries(base.holeBoundaries())
-                    .startZone(base.startZone())
-                    .goalZone(base.goalZone())
-                    .playerRadius(base.playerRadius())
-                    .safetyMargin(base.safetyMargin())
-                    .routeGraph(base.routeGraph())
-                    .objectives(Collections.emptyList())
-                    .gates(Collections.emptyList())
-                    .safeZones(Collections.emptyList())
-                    .parTimeMs(base.parTimeMs())
-                    .timeAttackLimitMs(base.timeAttackLimitMs())
-                    .build();
+            // The lesson uses the real Key + Gate + branch/backtrack level. It is
+            // intentionally not a synthetic empty room so the teaching flow matches gameplay.
+            LevelDefinition tutorialLevel = Level04.build();
             LevelValidator.requireValid(tutorialLevel);
             startRun(tutorialLevel, ReplayMode.TUTORIAL, null, null);
         } catch (RuntimeException invalidTutorial) {
@@ -781,23 +863,26 @@ public final class ScreenUI extends FrameLayout {
     }
 
     private void showTutorialExitConfirmation() {
-        new AlertDialog.Builder(activity)
+        if (exitConfirmationShowing) return;
+        AlertDialog dialog = new AlertDialog.Builder(activity)
                 .setTitle(R.string.tutorial_title)
                 .setMessage(R.string.tutorial_exit_confirm)
-                .setNegativeButton(R.string.common_cancel, null)
-                .setPositiveButton(R.string.game_exit, (dialog, which) -> {
+                .setNegativeButton(R.string.tutorial_exit_continue, null)
+                .setPositiveButton(R.string.game_exit, (ignored, which) -> {
                     discardOutcome = true;
-                    if (gameView != null) gameView.setListener(null);
                     if (gameEngine != null) gameEngine.interrupt("tutorial-exit");
-                    if (gameView != null) gameView.onInputChanged();
+                    // The shared release path clears input ownership and pending frames.
+                    releaseGameView();
                     tutorialRunning = false;
                     tutorialComplete = false;
                     tutorialFailed = false;
-                    releaseGameView();
                     gameEngine = null;
                     if (currentRoute() == Route.TUTORIAL) replace(Route.HOME);
                     else goHome();
-                }).show();
+                }).create();
+        exitConfirmationShowing = true;
+        dialog.setOnDismissListener(ignored -> exitConfirmationShowing = false);
+        dialog.show();
     }
 
     // ------------------------------------------------------------------
@@ -1003,6 +1088,8 @@ public final class ScreenUI extends FrameLayout {
                     levelProgress.clear();
                     achievementRows.clear();
                     dailyRecord = null;
+                    cosmeticLoadout = store.loadCosmeticLoadout();
+                    if (gameView != null) gameView.setCosmeticLoadout(cosmeticLoadout);
                     refreshData();
                     render();
                 } else {

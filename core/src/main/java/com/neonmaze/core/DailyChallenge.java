@@ -18,8 +18,9 @@ import java.util.TimeZone;
  * Deterministic, offline Daily Challenge selection.
  *
  * <p>The challenge date is Gregorian UTC. Selection uses the canonical
- * five-level Campaign Catalog hash and the versioned seed string defined by
- * the product contract. No local timezone, random generator, network service,
+ * active Campaign Catalog hash and the versioned seed string defined by
+ * the product contract. Selection scales with the validated catalog size.
+ * No local timezone, random generator, network service,
  * Android API or {@code java.time} type participates in selection.</p>
  *
  * <p>Daily Challenge completion is a separate mode record. This class only
@@ -29,16 +30,10 @@ public final class DailyChallenge {
 
     /** Daily selection is tied to the active deterministic game-rules version. */
     public static final int DEFAULT_RULES_VERSION = ReplaySystem.GAME_RULES_VERSION;
-    public static final int CAMPAIGN_LEVEL_COUNT = 5;
+    /** @deprecated Catalog size is dynamic; retained for source compatibility only. */
+    @Deprecated public static final int CAMPAIGN_LEVEL_COUNT = 5;
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
-    private static final String[] EXPECTED_LEVEL_IDS = {
-            ProgressRules.LEVEL_01_ID,
-            ProgressRules.LEVEL_02_ID,
-            ProgressRules.LEVEL_03_ID,
-            ProgressRules.LEVEL_04_ID,
-            ProgressRules.LEVEL_05_ID
-    };
 
     private DailyChallenge() {
     }
@@ -112,7 +107,7 @@ public final class DailyChallenge {
                 | ((long) digest[1] & 0xffL) << 16
                 | ((long) digest[2] & 0xffL) << 8
                 | ((long) digest[3] & 0xffL);
-        int zeroBasedIndex = (int) (unsignedSeed % CAMPAIGN_LEVEL_COUNT);
+        int zeroBasedIndex = (int) (unsignedSeed % catalog.size());
         LevelDefinition selectedLevel = catalog.get(zeroBasedIndex);
         int levelNumber = zeroBasedIndex + 1;
         String challengeId = "NMZR-D" + rulesVersion + "-" + canonicalDate
@@ -166,14 +161,8 @@ public final class DailyChallenge {
     /** Validates exactly 64 ASCII hexadecimal digits and canonicalizes to lowercase. */
     public static String canonicalCatalogHash(Catalog catalog) {
         if (catalog == null) throw new IllegalArgumentException("catalog must not be null");
-        if (catalog.size() != CAMPAIGN_LEVEL_COUNT) {
-            throw new IllegalArgumentException("Daily Challenge requires exactly five Campaign levels");
-        }
-        for (int i = 0; i < EXPECTED_LEVEL_IDS.length; i++) {
-            if (!EXPECTED_LEVEL_IDS[i].equals(catalog.get(i).levelId())) {
-                throw new IllegalArgumentException("Campaign Catalog order/ID mismatch at position "
-                        + (i + 1));
-            }
+        if (catalog.isEmpty()) {
+            throw new IllegalArgumentException("Daily Challenge requires a non-empty Campaign Catalog");
         }
         String hash = catalog.catalogHash();
         if (hash == null || hash.length() != 64) {
@@ -212,11 +201,7 @@ public final class DailyChallenge {
             int version = Integer.parseInt(challengeId.substring(6, versionEnd));
             String date = challengeId.substring(dateStart, dateEnd);
             String levelId = challengeId.substring(dateEnd + 1);
-            boolean knownLevel = false;
-            for (String expectedId : EXPECTED_LEVEL_IDS) {
-                if (expectedId.equals(levelId)) { knownLevel = true; break; }
-            }
-            return version >= 1 && version <= 0xffff && knownLevel
+            return version >= 1 && version <= 0xffff && isValidLevelId(levelId)
                     && canonicalUtcDate(date).equals(date)
                     && challengeId.equals("NMZR-D" + version + "-" + date + "-" + levelId);
         } catch (RuntimeException ignored) {
@@ -233,6 +218,23 @@ public final class DailyChallenge {
         int dateStart = versionEnd + 1;
         int dateEnd = dateStart + 10;
         return challengeId.substring(dateEnd + 1);
+    }
+
+
+    private static boolean isValidLevelId(String value) {
+        if (value == null || value.isEmpty() || value.length() > 96) return false;
+        char first = value.charAt(0);
+        if (!isAsciiAlphaNumeric(first)) return false;
+        for (int i = 1; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (!isAsciiAlphaNumeric(ch) && ch != '-' && ch != '_' && ch != '.') return false;
+        }
+        return true;
+    }
+
+    private static boolean isAsciiAlphaNumeric(char value) {
+        return (value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z')
+                || (value >= '0' && value <= '9');
     }
 
     private static byte[] sha256(byte[] input) {

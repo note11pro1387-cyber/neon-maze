@@ -26,6 +26,7 @@ public final class HomeScreen {
     private final Activity activity;
     private final UiKit ui;
     private final int completedLevels;
+    private final int totalLevels;
     private final int totalAttempts;
     private final int totalCompletions;
     private final boolean hasAnyProgress;
@@ -43,7 +44,7 @@ public final class HomeScreen {
     private final Actions actions;
 
     public HomeScreen(@NonNull Activity activity, @NonNull UiKit ui,
-                      int completedLevels, int totalAttempts, int totalCompletions,
+                      int completedLevels, int totalLevels, int totalAttempts, int totalCompletions,
                       boolean hasAnyProgress, boolean allComplete,
                       String playerName, boolean profileConfigured, boolean profileLoading,
                       boolean profileLoadFailed, DailyChallenge.Selection daily,
@@ -52,6 +53,7 @@ public final class HomeScreen {
         this.activity = activity;
         this.ui = ui;
         this.completedLevels = completedLevels;
+        this.totalLevels = Math.max(1, totalLevels);
         this.totalAttempts = totalAttempts;
         this.totalCompletions = totalCompletions;
         this.hasAnyProgress = hasAnyProgress;
@@ -111,13 +113,13 @@ public final class HomeScreen {
         if (progressReady) {
             String progressLabel = completedLevels == 0
                     ? activity.getString(R.string.home_new_player)
-                    : activity.getString(R.string.home_levels_done, completedLevels);
+                    : activity.getString(R.string.home_levels_done, completedLevels, totalLevels);
             ui.addText(hero, progressLabel, 13, UiKit.TEXT_SECONDARY, false, 7, 0);
             LinearLayout progressTrack = ui.row();
             progressTrack.setBackground(ui.shape(UiKit.DEEP, UiKit.BORDER, 8, 1));
             View progress = new View(activity);
             progress.setBackground(ui.shape(UiKit.MINT, UiKit.MINT, 8, 0));
-            int percent = Math.max(0, Math.min(100, completedLevels * 20));
+            int percent = Math.max(0, Math.min(100, Math.round(completedLevels * 100f / totalLevels)));
             progressTrack.addView(progress, new LinearLayout.LayoutParams(0, ui.dp(7), percent));
             View remaining = new View(activity);
             progressTrack.addView(remaining, new LinearLayout.LayoutParams(0, ui.dp(7), 100 - percent));

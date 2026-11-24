@@ -45,6 +45,8 @@ public final class TutorialScreen {
         String[] steps = {activity.getString(R.string.tutorial_step_start),
                 activity.getString(R.string.tutorial_step_hold),
                 activity.getString(R.string.tutorial_step_turn),
+                activity.getString(R.string.tutorial_step_key),
+                activity.getString(R.string.tutorial_step_gate),
                 activity.getString(R.string.tutorial_step_goal)};
         LinearLayout card = ui.card();
         for (int i = 0; i < steps.length; i++) {
@@ -93,7 +95,7 @@ public final class TutorialScreen {
         hintParams.topMargin = ui.dp(3);
         overlay.addView(hintView, hintParams);
 
-        android.widget.Button exit = ui.button(activity.getString(R.string.tutorial_skip),
+        android.widget.Button exit = ui.button(activity.getString(R.string.tutorial_exit_button),
                 UiKit.ButtonStyle.QUIET, actions::onSkip);
         ui.addButton(overlay, exit, false);
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
@@ -112,7 +114,8 @@ public final class TutorialScreen {
                     shownStep[0] = detected;
                     stepView.setText(stepLabelResource(detected));
                     hintView.setText(stepHintResource(detected));
-                    stepView.setTextColor(detected >= 2 ? UiKit.VIOLET : UiKit.MINT);
+                    stepView.setTextColor(detected >= 3 ? UiKit.AMBER
+                            : detected >= 2 ? UiKit.VIOLET : UiKit.MINT);
                 }
                 return true;
             };
@@ -146,7 +149,9 @@ public final class TutorialScreen {
         private double initialDy;
 
         int detect(GameEngine engine) {
-            if (engine.getState() == GameEngine.EngineState.COMPLETED) return 3;
+            if (engine.getState() == GameEngine.EngineState.COMPLETED) return 5;
+            if (engine.hasPassedGate("exit-gate")) return 4;
+            if (engine.hasCollectedKey("exit-key")) return 3;
             if (engine.getState() != GameEngine.EngineState.RUNNING) return 0;
             List<Vec2> trail = engine.getTrail();
             if (trail == null || trail.size() < 2) return 0;
@@ -218,7 +223,9 @@ public final class TutorialScreen {
         switch (step) {
             case 1: return R.string.tutorial_step_hold;
             case 2: return R.string.tutorial_step_turn;
-            case 3: return R.string.tutorial_step_goal;
+            case 3: return R.string.tutorial_step_key;
+            case 4: return R.string.tutorial_step_gate;
+            case 5: return R.string.tutorial_step_goal;
             default: return R.string.tutorial_step_start;
         }
     }
@@ -227,7 +234,9 @@ public final class TutorialScreen {
         switch (step) {
             case 1: return R.string.tutorial_hint_hold;
             case 2: return R.string.tutorial_hint_turn;
-            case 3: return R.string.tutorial_hint_goal;
+            case 3: return R.string.tutorial_hint_key;
+            case 4: return R.string.tutorial_hint_gate;
+            case 5: return R.string.tutorial_hint_goal;
             default: return R.string.tutorial_hint_start;
         }
     }

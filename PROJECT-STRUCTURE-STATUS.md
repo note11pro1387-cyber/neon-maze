@@ -1,3 +1,5 @@
+> **یادداشت تاریخچه:** این فایل Snapshot قدیمی ساختار/Build است و وضعیت جاری Partها را گزارش نمی‌کند. Source of Truth فعلی، پوشهٔ `project/` در بستهٔ تحویل Part 5 است که از درخت Part 3 ادامه یافته؛ ترتیب مورد تأیید مالک `Part 1 → Part 2 → Part 3 → Part 5 → Part 4` است. Part 1 تا 3 دوباره اجرا نمی‌شوند؛ Part 4 آغاز نشده و تا تأیید صریح مالک قفل است. Android Gradle Build و QA دستگاهی Part 5 در این محیط اثبات نشده‌اند. برای وضعیت جاری فقط `reference/00-START-HERE-FA.md`، Blueprint و `handoff/PHASE-LEDGER.md` بستهٔ تحویل را ملاک قرار بده.
+
 # NEON MAZE — وضعیت جاری ساختار و Build (بعد از Phase03-A و QA محدود Core)
 
 > این فایل وضعیت جاری را ثبت می‌کند؛ اعداد و محدودیت‌های فایل‌محور Design Freeze قدیمی

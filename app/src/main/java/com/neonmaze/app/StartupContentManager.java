@@ -10,14 +10,9 @@ import androidx.annotation.Nullable;
 
 import com.neonmaze.core.LevelSystem.Catalog;
 import com.neonmaze.core.LevelSystem.LevelValidator;
-import com.neonmaze.core.levels.Level01;
-import com.neonmaze.core.levels.Level02;
-import com.neonmaze.core.levels.Level03;
-import com.neonmaze.core.levels.Level04;
-import com.neonmaze.core.levels.Level05;
+import com.neonmaze.core.levels.BuiltInLevelCatalog;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -252,14 +247,22 @@ public final class StartupContentManager implements AutoCloseable {
     }
 
     private Catalog buildAndValidateCatalog() {
-        Catalog catalog = new Catalog(Arrays.asList(
-                Level01.build(), Level02.build(), Level03.build(),
-                Level04.build(), Level05.build()));
-        if (catalog.size() != 5) {
-            throw new IllegalStateException("Campaign catalog must contain exactly five levels");
+        Catalog catalog = BuiltInLevelCatalog.create();
+        if (catalog.isEmpty()) {
+            throw new IllegalStateException("Campaign catalog must contain at least one level");
         }
         for (int i = 0; i < catalog.size(); i++) {
-            LevelValidator.requireValid(catalog.get(i));
+            com.neonmaze.core.LevelSystem.LevelDefinition level = catalog.get(i);
+            LevelValidator.requireValid(level);
+            String nameKey = level.displayNameKey();
+            String descriptionKey = nameKey.endsWith("_name")
+                    ? nameKey.substring(0, nameKey.length() - 5) + "_desc" : nameKey + "_desc";
+            if (appContext.getResources().getIdentifier(nameKey, "string", appContext.getPackageName()) == 0
+                    || appContext.getResources().getIdentifier(descriptionKey, "string",
+                    appContext.getPackageName()) == 0) {
+                throw new IllegalStateException("Missing localization resources for level "
+                        + level.levelId() + " (" + nameKey + ", " + descriptionKey + ")");
+            }
         }
         return catalog;
     }

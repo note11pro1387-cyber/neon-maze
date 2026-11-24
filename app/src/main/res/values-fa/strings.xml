@@ -1,7 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">NEON MAZE</string>
+    <string name="gameplay_sector_label">بخش %1$02d از ۰۵  •  %2$s</string>
+    <string name="gameplay_start_label">شروع</string>
+    <string name="gameplay_goal_label">خروج</string>
     <string name="gameplay_pause">مکث</string>
+    <string name="gameplay_ready_hint">برای شروع، نشانگر آغاز را لمس کن</string>
+    <string name="gameplay_success_hint">هزارتو کامل شد · نتیجه در حال آماده‌شدن است</string>
+    <string name="gameplay_failure_hint">این اجرا پایان یافت · نتیجه در حال آماده‌شدن است</string>
+    <string name="gameplay_restart">شروع دوبارهٔ اجرا</string>
     <string name="gameplay_elapsed_time">زمان سپری‌شده %1$s</string>
     <string name="gameplay_remaining_time">زمان باقی‌مانده %1$s</string>
     <string name="gameplay_objectives_summary">اهداف %1$d از %2$d</string>
@@ -9,10 +16,14 @@
     <string name="gameplay_objectives_combined">%1$s · %2$s</string>
     <string name="gameplay_objective_blocked">هدف اجباری باقی مانده است</string>
     <string name="gameplay_no_objectives">بدون هدف</string>
-    <string name="gameplay_gate_open">دروازه باز است</string>
-    <string name="gameplay_gate_warning">دروازه به‌زودی بسته می‌شود</string>
-    <string name="gameplay_gate_closed">دروازه بسته است</string>
-    <string name="gameplay_gate_locked">دروازه قفل است؛ کلید لازم است</string>
+    <string name="gameplay_gate_open">باز</string>
+    <string name="gameplay_gate_warning">در آستانهٔ بسته‌شدن</string>
+    <string name="gameplay_gate_closed">بسته</string>
+    <string name="gameplay_gate_locked">قفل · کلید لازم است</string>
+    <string name="gameplay_gate_state">%1$s · %2$s</string>
+    <string name="gameplay_gate_timed_name">دروازهٔ زمان‌دار</string>
+    <string name="gameplay_gate_exit_name">دروازهٔ خروج</string>
+    <string name="gameplay_gate_generic">دروازهٔ %1$d</string>
     <string name="brand_eyebrow">دقت / کشف / تسلط</string>
     <string name="home_title">مسیرت را پیدا کن؛ هزارتو را فتح کن</string>
     <string name="home_subtitle">یک تجربهٔ مسیر‌یابی دقیق؛ بر پایهٔ تمرکز، زمان‌بندی و کنترل.</string>
@@ -27,12 +38,12 @@
     <string name="home_daily_done">بهترین زمان امروز: %1$s</string>
     <string name="home_daily_unavailable">بارگذاری چالش روزانه انجام نشد.</string>
     <string name="home_progress">پیشرفت کمپین</string>
-    <string name="home_levels_done">%1$d از ۵ مرحله تکمیل شده</string>
+    <string name="home_levels_done">%1$d از %2$d مرحله تکمیل شده</string>
     <string name="home_new_player">اولین مسیر تو از اینجا آغاز می‌شود.</string>
     <string name="home_returning">چالش دقیق بعدی تو آماده است.</string>
-    <string name="home_all_complete">هر پنج مرحلهٔ کمپین تکمیل شده‌اند.</string>
+    <string name="home_all_complete">همهٔ مراحل کمپین تکمیل شده‌اند.</string>
     <string name="campaign_title">کمپین</string>
-    <string name="campaign_subtitle">پنج مسیر دست‌ساز؛ یک مهارت در حال تکامل.</string>
+    <string name="campaign_subtitle">مسیرهای دست‌ساز؛ یک مهارت در حال تکامل.</string>
     <string name="campaign_level">مرحلهٔ %1$d</string>
     <string name="campaign_locked">قفل</string>
     <string name="campaign_available">آماده</string>
@@ -62,7 +73,7 @@
     <string name="modes_title">حالت بازی را انتخاب کن</string>
     <string name="modes_subtitle">هر حالت قوانین مکث و ثبت رکورد خودش را دارد.</string>
     <string name="mode_campaign">کمپین</string>
-    <string name="mode_campaign_desc">پنج مرحلهٔ دست‌ساز را پیش ببر. مسیرهای معتبر می‌توانند ستاره و مرحلهٔ جدید باز کنند.</string>
+    <string name="mode_campaign_desc">مراحل دست‌ساز را پیش ببر. مسیرهای معتبر می‌توانند ستاره و مرحلهٔ جدید باز کنند.</string>
     <string name="mode_practice">تمرین</string>
     <string name="mode_practice_desc">هر مسیر بازشده را تمرین کن. مکث مجاز است؛ ستاره یا بازگشایی کمپین ندارد.</string>
     <string name="mode_time_attack">رقابت زمانی</string>
@@ -131,7 +142,7 @@
     <string name="tutorial_step_hold">۰۲ / نگه‌داشتن</string>
     <string name="tutorial_step_turn">۰۳ / پیچ</string>
     <string name="tutorial_step_goal">۰۴ / هدف</string>
-    <string name="tutorial_instructions">ناحیهٔ شروع را لمس کن. یک انگشت را روی صفحه نگه دار و مسیر روشن را دنبال کن. تا رسیدن به هدف انگشتت را برندار.</string>
+    <string name="tutorial_instructions">نقطهٔ شروع را لمس کن و تا رسیدن به هدف، یک انگشت را روی مسیر نگه دار. در ماز آموزشی واقعی، کلید را بردار، برای بازکردن دروازه برگرد و از آن عبور کن. هنگام اجرا می‌توانی مکث کنی؛ خروج با تأیید انجام می‌شود.</string>
     <string name="tutorial_start">شروع آموزش تعاملی</string>
     <string name="tutorial_skip">رد کردن آموزش</string>
     <string name="tutorial_active_hint">تماس را حفظ کن و مسیر را دنبال کن. برداشتن انگشت اجرا را متوقف می‌کند.</string>
@@ -139,6 +150,7 @@
     <string name="tutorial_retry">تلاش دوباره</string>
     <string name="tutorial_finish">پایان آموزش</string>
     <string name="tutorial_exit_confirm">از آموزش خارج می‌شوی؟ اجرای تمرینی فعلی متوقف می‌شود و پیشرفت کمپین نمی‌دهد.</string>
+    <string name="tutorial_exit_continue">ادامهٔ آموزش</string>
     <string name="achievements_title">دستاوردها</string>
     <string name="achievements_subtitle">با بازی واقعی به دست می‌آیند؛ بدون XP، جعبهٔ شانسی یا خرید.</string>
     <string name="achievements_empty">اولین دستاوردت منتظر توست.</string>
@@ -201,7 +213,12 @@
     <string name="result_path_review">بازبینی مسیر</string>
     <string name="result_path_unavailable">بازبینی مسیر برای این اجرا در دسترس نیست.</string>
     <string name="result_save_pending">در حال ذخیرهٔ نتیجه…</string>
-    <string name="result_save_error">ذخیرهٔ نتیجه انجام نشد؛ تا زمان خروج، نتیجه روی صفحه باقی می‌ماند.</string>
+    <string name="result_save_error">ذخیرهٔ نتیجه انجام نشد. همین نتیجه را باز نگه دار و با همان شناسه دوباره تلاش کن.</string>
+    <string name="result_save_unavailable">آماده‌سازی این نتیجه برای ذخیره ناموفق بود و دادهٔ قابل‌تلاش مجدد وجود ندارد.</string>
+    <string name="result_save_retry">تلاش دوباره برای ذخیرهٔ نتیجه</string>
+    <string name="result_save_success">نتیجه با موفقیت ذخیره شد</string>
+    <string name="result_save_retry_first">پیش از شروع اجرای جدید، نتیجهٔ قبلی را ذخیره یا دوباره ارسال کن.</string>
+    <string name="result_restart_interrupted">شروع دوبارهٔ اجرای متوقف‌شده</string>
     <string name="result_failed_path">عبور از مرز مسیر</string>
     <string name="result_failed_incomplete">هدف اجباری یا مقصد تکمیل نشد</string>
     <string name="result_failed_time">زمان مجاز به پایان رسید</string>
@@ -249,11 +266,10 @@
     <string name="game_resume_touch">ادامه — نشانگر را لمس کن</string>
     <string name="game_restart">شروع دوبارهٔ مسیر</string>
     <string name="game_exit">خروج از اجرا</string>
+    <string name="game_exit_continue">ادامهٔ بازی</string>
     <string name="game_exit_title">از این اجرا خارج می‌شوی؟</string>
     <string name="game_exit_confirm">تلاش فعلی متوقف می‌شود؛ به‌عنوان شکست ثبت نمی‌شود و پاداش کمپین نمی‌دهد.</string>
     <string name="profile_best">بهترین زمان بدون کمک در کمپین</string>
-
-    <!-- Part08 screen states and details -->
     <string name="home_loading">در حال بارگذاری پیشرفت ذخیره‌شده…</string>
     <string name="home_store_error">بارگذاری پیشرفت محلی انجام نشد؛ داده‌های ذخیره‌شده تغییری نکرده‌اند.</string>
     <string name="home_retry">تلاش دوباره</string>
@@ -268,8 +284,6 @@
     <string name="campaign_personal_best">بهترین رکورد شخصی</string>
     <string name="profile_avatar_photo_label">تصویر اختصاصی</string>
     <string name="profile_avatar_preview">پیش‌نمایش آواتار</string>
-
-    <!-- Accessible level-selector labels -->
     <string name="mode_level_available_description">مرحلهٔ %1$d، در دسترس</string>
     <string name="mode_level_locked_description">مرحلهٔ %1$d، قفل‌شده</string>
     <string name="profile_load_error">بارگذاری پروفایل محلی انجام نشد؛ برای محافظت از اطلاعات قبلی، ویرایش موقتاً غیرفعال است.</string>
@@ -287,13 +301,9 @@
     <string name="tutorial_hint_hold">یک انگشت را روی صفحه نگه دار و مسیر را دنبال کن؛ برداشتن انگشت، آموزش را متوقف می‌کند.</string>
     <string name="tutorial_hint_turn">به پیچ مسیر آرام نزدیک شو و در مرکز کریدور روشن حرکت کن.</string>
     <string name="tutorial_hint_goal">ردیابی مسیر را تا رسیدن به نشانگر هدف ادامه بده و زودتر انگشتت را برندار.</string>
-
-    <!-- Part08 / persisted SFX volume -->
     <string name="settings_volume">بلندی صدای افکت‌ها</string>
     <string name="settings_volume_value">%1$d٪</string>
     <string name="settings_volume_accessibility">بلندی صدای افکت‌ها: %1$d درصد</string>
-
-    <!-- Phase02 / first-launch resource bootstrap -->
     <string name="startup_title">آماده‌سازی مسیر</string>
     <string name="startup_subtitle">منابع بازی و به‌روزرسانی‌های اختیاری محتوا بررسی می‌شوند.</string>
     <string name="startup_checking_local">آماده‌سازی منابع بازی</string>
@@ -316,5 +326,40 @@
     <string name="startup_retry">تلاش دوباره</string>
     <string name="startup_continue_offline">ادامه با منابع محلی</string>
     <string name="startup_local_privacy">پروفایل و پیشرفت بازیکن روی همین دستگاه می‌مانند.</string>
-
+    <string name="cosmetic_equipped">انتخاب‌شده</string>
+    <string name="cosmetic_available">آزادشده</string>
+    <string name="cosmetic_equip">تجهیز</string>
+    <string name="profile_equipped_cosmetics">چیدمان فعال</string>
+    <string name="profile_equipped_trail">رد مسیر: %1$s</string>
+    <string name="profile_equipped_frame">قاب نشانگر: %1$s</string>
+    <string name="profile_equipped_emblem">نشان: %1$s</string>
+    <string name="game_playfield_accessibility">میدان ماز. از نقطهٔ شروع تا هدف حرکت کن و انگشتت را روی صفحه نگه دار.</string>
+    <string name="game_playfield_accessibility_detail">وضعیت ماز: %1$s</string>
+    <string name="result_replay_incompatible">این ضبط مسیر با هندسه یا قوانین مرحلهٔ فعلی سازگار نیست؛ بنابراین امکان پخش امن آن وجود ندارد.</string>
+    <string name="replay_play">پخش</string>
+    <string name="replay_pause">مکث</string>
+    <string name="replay_speed">سرعت: %1$s</string>
+    <string name="replay_position">%1$s / %2$s</string>
+    <string name="tutorial_step_key">۰۴ / کلید</string>
+    <string name="tutorial_step_gate">۰۵ / دروازه</string>
+    <string name="tutorial_hint_key">کلید را در شاخهٔ سمت چپ پیدا کن. انگشتت را برندار و از مسیر مرکزی برگرد.</string>
+    <string name="tutorial_hint_gate">کلید، دروازهٔ بالایی را باز می‌کند. از دروازه عبور کن و به هدف برس. هر زمان لازم بود مکث کن؛ خروج نیز با تأیید انجام می‌شود.</string>
+    <string name="cosmetic_unequip">برداشتن نشان</string>
+    <string name="cosmetic_unlock_default">از ابتدا در دسترس</string>
+    <string name="cosmetic_unlock_achievement">شرط آزادسازی: دستاورد «%1$s»</string>
+    <string name="cosmetic_unlock_completions">شرط آزادسازی: %1$d بار تکمیل کمپین</string>
+    <string name="replay_ghost_legend">مسیر تو · خط بنفش: مسیر سایه</string>
+    <string name="tutorial_exit_button">خروج از آموزش</string>
+    <string name="game_accessibility_summary">%1$s؛ %2$s؛ هدف‌ها %3$d از %4$d؛ هدف‌های اجباری %5$d از %6$d؛ کلیدها %7$d؛ دروازه %8$s</string>
+    <string name="game_accessibility_state_ready">آماده</string>
+    <string name="game_accessibility_state_running">در حال اجرا</string>
+    <string name="game_accessibility_state_paused">متوقف‌شده</string>
+    <string name="game_accessibility_state_failed">شکست‌خورده</string>
+    <string name="game_accessibility_state_completed">تکمیل‌شده</string>
+    <string name="game_accessibility_state_interrupted">قطع‌شده</string>
+    <string name="game_accessibility_gate_none">بدون دروازهٔ فعال</string>
+    <string name="game_accessibility_gate_open">باز</string>
+    <string name="game_accessibility_gate_warning">در آستانهٔ بسته‌شدن</string>
+    <string name="game_accessibility_gate_closed">بسته</string>
+    <string name="game_accessibility_gate_locked">قفل‌شده</string>
 </resources>

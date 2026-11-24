@@ -346,6 +346,13 @@ public final class FeedbackSystem {
         vibrateOneShot("objective", 30L);
     }
 
+    /** Key pickup uses a brighter, higher two-tone cue than a standard Objective. */
+    public void onKeyCollected() {
+        if (!checkCooldown("key-collected", OBJECTIVE_COOLDOWN_MS)) return;
+        playSfx("key-collected");
+        vibratePattern("key-collected", new long[]{0L, 22L, 28L, 30L});
+    }
+
     /**
      * Player pressed against a closed or locked gate: low thud plus a
      * double-tap haptic. This is <strong>not</strong> a failure and must
@@ -355,6 +362,13 @@ public final class FeedbackSystem {
         if (!checkCooldown("gate-blocked", GATE_BLOCKED_COOLDOWN_MS)) return;
         playSfx("blocked");
         vibratePattern("gate-blocked", BLOCKED_PATTERN);
+    }
+
+    /** Successful Gate crossing: a distinct ascending cue, separate from Key pickup. */
+    public void onGatePassed() {
+        if (!checkCooldown("gate-pass", 180L)) return;
+        playSfx("gate-pass");
+        vibrateOneShot("gate-pass", 24L);
     }
 
     /**
@@ -411,8 +425,16 @@ public final class FeedbackSystem {
         // OBJECTIVE: 1046 Hz bell, 80 ms with exponential decay.
         registerSfx("objective", toneWithDecay(1046.5, 80, 1.0));
 
+        // KEY: a brighter rising interval, distinguishable from a regular collectible.
+        registerSfx("key-collected", concat(
+                toneWithDecay(1318.51, 46, 0.8), toneWithDecay(1760.0, 62, 0.85)));
+
         // BLOCKED: 220 Hz thud, 100 ms.
         registerSfx("blocked", toneWithDecay(220.0, 100, 1.0));
+
+        // GATE PASS: two short rising tones, distinct from the objective bell.
+        registerSfx("gate-pass", concat(
+                tone(783.99, 48, 0.78), tone(987.77, 58, 0.82)));
 
         // NEAR-BOUNDARY: 1760 Hz short tick, 25 ms.
         registerSfx("near-boundary", toneWithDecay(1760.0, 25, 0.6));

@@ -135,9 +135,9 @@ public final class ProgressRules {
         public static Builder builder() { return new Builder(); }
 
         /**
-         * Builds a record from the Engine outcome. If Replay overflow made the
-         * trace unavailable, callers may pass gate IDs observed from the
-         * presentation event accumulator through the overload below.
+         * Builds a record from the Engine outcome. Gate passes come from the
+         * authoritative Engine ledger and are merged with optional observations
+         * and Replay events for compatibility with older callers.
          */
         public static RunRecord fromOutcome(String runId, LevelDefinition level,
                                             GameEngine.RunOutcome outcome,
@@ -155,6 +155,7 @@ public final class ProgressRules {
             Objects.requireNonNull(outcome, "outcome");
             TreeSet<String> passed = new TreeSet<String>();
             if (observedPassedGateIds != null) passed.addAll(observedPassedGateIds);
+            passed.addAll(outcome.passedGateIds());
             ReplayTrace trace = outcome.trace();
             if (trace != null) {
                 for (ReplaySystem.TraceEvent event : trace.events()) {
@@ -480,7 +481,14 @@ public final class ProgressRules {
     // Public pure rules
     // =====================================================================
 
-    /** Campaign stars: 1 for completion, 2 at/below Par, 3 at/below Par with all Optionals. */
+    /**
+     * On levels without Optional objectives, a deterministic speed target
+     * replaces the previous vacuous all-Optionals condition. The 80% Par
+     * ratio is a tuning default pending real-device playtesting.
+     */
+    public static final double NO_OPTIONAL_THREE_STAR_PAR_RATIO = 0.80;
+
+    /** Campaign stars: 1 over Par, 2 at/below Par, 3 for full Optional or fast no-Optional runs. */
     public static int starsFor(LevelDefinition level, Collection<String> collectedObjectiveIds,
                                long elapsedMs, boolean completed) {
         Objects.requireNonNull(level, "level");
@@ -488,7 +496,10 @@ public final class ProgressRules {
         long elapsed = Math.max(0L, elapsedMs);
         long par = requirePositivePar(level.parTimeMs());
         if (elapsed > par) return 1;
-        return allOptionalsCollected(level, collectedObjectiveIds) ? 3 : 2;
+        if (fullOptionalMask(level) != 0) {
+            return allOptionalsCollected(level, collectedObjectiveIds) ? 3 : 2;
+        }
+        return elapsed <= Math.floor(par * NO_OPTIONAL_THREE_STAR_PAR_RATIO) ? 3 : 2;
     }
 
     /** Campaign score: 1000 + 250 per Optional + floor(300 * clamped time ratio). */

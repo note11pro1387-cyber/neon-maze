@@ -70,3 +70,14 @@ Windows PowerShell / CMD:
 ## وضعیت اعتبارسنجی
 
 این بسته سورس و CI را شامل می‌شود، نه APK از پیش ساخته‌شده. وجود فایل‌های پروژه یا تکمیل بررسی ایستای آن‌ها به معنی موفقیت کامپایل نیست. Build واقعی، AAPT، Lint و تست‌ها باید در GitHub Actions اجرا شوند؛ نصب و Gameplay روی دستگاه نیز مرحلهٔ QA جداگانه است.
+
+
+## وضعیت مهندسی Part 5
+
+درخت جاری شامل اصلاحات عمیق Part 5 برای Gameplay UI/UX و Gaming Animation با Art Direction مستقل `PRISM CIRCUIT` است. اسناد اجرایی و قراردادهای پذیرش در `docs/gameplay/PART-05-*` قرار دارند. Source of Truth کد، درخت Part 3 و سپس همین درخت اصلاح‌شدهٔ Part 5 است. وضعیت ترتیب جاری `Part 1 → Part 2 → Part 3 → Part 5 → Part 4` است؛ Part 4 تا تأیید صریح مالک شروع نمی‌شود. Build واقعی و QA بصری روی دستگاه هنوز تأیید نشده‌اند. در بستهٔ تحویل، `00-START-HERE-FA.md`، Blueprint و Handoff به‌روزشده مرجع تصمیم‌ها و وضعیت هستند؛ Ledgerهای تاریخی داخل `docs/release/` مرجع وضعیت امروز نیستند.
+
+## Repository-Ready V2 Snapshot و GitHub Desktop
+
+فایل ZIP مستقل `NEON-MAZE-V2-GITHUB-REPOSITORY-ROOT.zip` با همین درخت ساخته شده است؛ پس از Extract، فایل‌ها مستقیماً در ریشهٔ مخزن قرار می‌گیرند و پوشهٔ واسط `project/` ندارند. برای جای‌گذاری امن روی شاخهٔ مستقل `v2/full-source`، راهنمای `docs/release/GITHUB-DESKTOP-IMPORT-FA.md` را بخوان و از اسکریپت `tools/git/Apply-V2-Repository.ps1` استفاده کن.
+
+این Snapshot شامل `.gitignore`، `.gitattributes`، `.github/workflows/build-apk.yml`، Manifest تمامیت سورس، SVG آیکون‌ها، فایل تصویری منبع Art Direction و بافت WEBP مورد استفاده در Runtime است. پوشهٔ `.git/` عمداً در ZIP نیست؛ دیتابیس Git و تاریخچهٔ مخزن باید توسط GitHub Desktop حفظ شود.

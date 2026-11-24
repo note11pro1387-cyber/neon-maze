@@ -14,7 +14,7 @@ import com.neonmaze.core.LevelSystem.LevelDefinition;
 
 import java.util.Map;
 
-/** Five-node Campaign map with the level briefing contained in this screen. */
+/** Catalog-driven Campaign map with the level briefing contained in this screen. */
 public final class CampaignScreen {
     public interface Actions {
         void onSelectCampaignLevel(@NonNull LevelDefinition level);
@@ -23,15 +23,6 @@ public final class CampaignScreen {
         void onRetry();
         void onBack();
     }
-
-    private static final int[] NAME_IDS = {
-            R.string.level_01_name, R.string.level_02_name, R.string.level_03_name,
-            R.string.level_04_name, R.string.level_05_name
-    };
-    private static final int[] DESC_IDS = {
-            R.string.level_01_desc, R.string.level_02_desc, R.string.level_03_desc,
-            R.string.level_04_desc, R.string.level_05_desc
-    };
 
     private final Activity activity;
     private final UiKit ui;
@@ -106,8 +97,8 @@ public final class CampaignScreen {
         info.setPaddingRelative(ui.dp(12), 0, ui.dp(8), 0);
         ui.addText(info, activity.getString(R.string.campaign_level, index + 1),
                 10, UiKit.MINT, true, 0, 0);
-        ui.addText(info, activity.getString(NAME_IDS[index]), 15, foreground, true, 3, 0);
-        ui.addText(info, activity.getString(DESC_IDS[index]), 11,
+        ui.addText(info, levelName(level), 15, foreground, true, 3, 0);
+        ui.addText(info, levelDescription(level), 11,
                 UiKit.TEXT_SECONDARY, false, 3, 0);
         card.addView(info, new LinearLayout.LayoutParams(0,
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -127,7 +118,7 @@ public final class CampaignScreen {
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
         card.setContentDescription(activity.getString(R.string.campaign_level, index + 1)
-                + ". " + activity.getString(NAME_IDS[index]) + ". " + stateLabel
+                + ". " + levelName(level) + ". " + stateLabel
                 + (completed && row != null ? ". " + activity.getString(
                 R.string.campaign_stars_value, row.stars) : ""));
         card.setFocusable(true);
@@ -159,9 +150,9 @@ public final class CampaignScreen {
         LinearLayout card = ui.card();
         ui.addText(card, activity.getString(R.string.campaign_briefing),
                 11, UiKit.MINT, true, 0, 0);
-        ui.addText(card, activity.getString(NAME_IDS[index]), 20,
+        ui.addText(card, levelName(level), 20,
                 UiKit.TEXT_PRIMARY, true, 6, 0);
-        ui.addText(card, activity.getString(DESC_IDS[index]), 13,
+        ui.addText(card, levelDescription(level), 13,
                 UiKit.TEXT_SECONDARY, false, 5, 0);
         ui.addSection(card, activity.getString(R.string.campaign_objectives), null);
         DifficultyProfile metrics = level.difficultyProfile();
@@ -197,6 +188,19 @@ public final class CampaignScreen {
                 UiKit.ButtonStyle.PRIMARY, unlocked && !progressLoading && !progressFailed
                         ? () -> actions.onStartCampaignLevel(level) : null), true);
         ui.addCard(page, card, 20);
+    }
+
+    private String levelName(LevelDefinition level) {
+        int id = activity.getResources().getIdentifier(level.displayNameKey(), "string",
+                activity.getPackageName());
+        return id == 0 ? level.levelId() : activity.getString(id);
+    }
+
+    private String levelDescription(LevelDefinition level) {
+        String key = level.displayNameKey();
+        key = key.endsWith("_name") ? key.substring(0, key.length() - 5) + "_desc" : key + "_desc";
+        int id = activity.getResources().getIdentifier(key, "string", activity.getPackageName());
+        return id == 0 ? activity.getString(R.string.campaign_subtitle) : activity.getString(id);
     }
 
     private LevelDefinition selectedLevel() {

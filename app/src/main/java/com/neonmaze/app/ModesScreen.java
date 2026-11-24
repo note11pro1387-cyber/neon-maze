@@ -182,10 +182,9 @@ public final class ModesScreen {
     }
 
     private String levelName(LevelDefinition level) {
-        int index = catalog.all().indexOf(level);
-        int[] ids = {R.string.level_01_name, R.string.level_02_name, R.string.level_03_name,
-                R.string.level_04_name, R.string.level_05_name};
-        return activity.getString(ids[Math.max(0, Math.min(ids.length - 1, index))]);
+        int id = activity.getResources().getIdentifier(level.displayNameKey(), "string",
+                activity.getPackageName());
+        return id == 0 ? level.levelId() : activity.getString(id);
     }
 
     private final class TextChip {

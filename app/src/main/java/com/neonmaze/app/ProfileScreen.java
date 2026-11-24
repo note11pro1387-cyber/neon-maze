@@ -48,6 +48,7 @@ public final class ProfileScreen {
     private final boolean progressLoading;
     private final boolean progressFailed;
     private final boolean achievementsUnavailable;
+    private final LocalStore.CosmeticLoadout loadout;
     private final Actions actions;
 
     public ProfileScreen(@NonNull Activity activity, @NonNull UiKit ui,
@@ -57,7 +58,8 @@ public final class ProfileScreen {
                          boolean editing, String pendingPhotoPath,
                          int selectedAvatar, boolean profileLoading, boolean profileLoadFailed,
                          boolean photoImportPending, boolean progressLoading, boolean progressFailed,
-                         boolean achievementsUnavailable, Actions actions) {
+                         boolean achievementsUnavailable,
+                         @NonNull LocalStore.CosmeticLoadout loadout, Actions actions) {
         this.activity = activity;
         this.ui = ui;
         this.profile = profile;
@@ -72,6 +74,7 @@ public final class ProfileScreen {
         this.progressLoading = progressLoading;
         this.progressFailed = progressFailed;
         this.achievementsUnavailable = achievementsUnavailable;
+        this.loadout = loadout;
         this.actions = actions;
     }
 
@@ -137,6 +140,18 @@ public final class ProfileScreen {
                 ui.addText(page, activity.getString(R.string.profile_best_none),
                         12, UiKit.TEXT_SECONDARY, false, 14, 0);
             }
+        }
+        ui.addSection(page, activity.getString(R.string.profile_equipped_cosmetics), null);
+        ui.addText(page, activity.getString(R.string.profile_equipped_trail,
+                        activity.getString(AchievementsScreen.cosmeticName(loadout.trailId))),
+                12, UiKit.TEXT_PRIMARY, false, 0, 0);
+        ui.addText(page, activity.getString(R.string.profile_equipped_frame,
+                        activity.getString(AchievementsScreen.cosmeticName(loadout.frameId))),
+                12, UiKit.TEXT_PRIMARY, false, 4, 0);
+        if (!loadout.emblemId.isEmpty()) {
+            ui.addText(page, activity.getString(R.string.profile_equipped_emblem,
+                            activity.getString(AchievementsScreen.cosmeticName(loadout.emblemId))),
+                    12, UiKit.TEXT_PRIMARY, false, 4, 0);
         }
         ui.addButton(page, ui.button(activity.getString(R.string.profile_achievements),
                 UiKit.ButtonStyle.SECONDARY, actions::onAchievements), true);
