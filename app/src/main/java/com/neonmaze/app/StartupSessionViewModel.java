@@ -26,6 +26,5 @@ public final class StartupSessionViewModel extends ViewModel {
             manager.close();
             manager = null;
         }
-        super.onCleared();
     }
 }
